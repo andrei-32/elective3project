@@ -1,3 +1,4 @@
+import 'package:elective3project/screens/flight_details_screen.dart';
 import 'package:flutter/material.dart';
 import 'screens/login_screen.dart';
 import 'screens/registration_screen.dart';
@@ -45,6 +46,7 @@ class MainApp extends StatelessWidget {
         '/': (context) => const LoginScreen(),
         '/registration': (context) => const RegistrationScreen(),
         '/home': (context) => const HomeScreen(),
+        '/flight_details': (context) => const FlightDetailsScreen(),
       },
     );
   }

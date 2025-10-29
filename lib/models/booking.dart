@@ -10,6 +10,7 @@ class Booking {
   final int children;
   final int infants;
   final String flightClass;
+  final String status;
 
   Booking({
     this.id,
@@ -21,6 +22,7 @@ class Booking {
     this.children = 0,
     this.infants = 0,
     required this.flightClass,
+    this.status = 'Confirmed',
   });
 
   Map<String, dynamic> toMap(int userId) {
@@ -36,6 +38,7 @@ class Booking {
       'children': children,
       'infants': infants,
       'flightClass': flightClass,
+      'status': status,
     };
   }
 
@@ -54,6 +57,7 @@ class Booking {
       children: map['children'],
       infants: map['infants'],
       flightClass: map['flightClass'],
+      status: map['status'],
     );
   }
 }

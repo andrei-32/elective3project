@@ -72,7 +72,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
         children: [
           BookingTab(onBookFlight: _bookFlight),
           const SchedulesTab(),
-          BookedFlightsTab(bookedFlights: _bookedFlights),
+          BookedFlightsTab(bookedFlights: _bookedFlights, onRefresh: _loadBookings),
         ],
       ),
     );

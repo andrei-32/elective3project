@@ -22,8 +22,9 @@ class DatabaseHelper {
 
     return await openDatabase(
       path,
-      version: 1,
+      version: 2,
       onCreate: _onCreate,
+      onUpgrade: _onUpgrade,
     );
   }
 
@@ -51,9 +52,16 @@ class DatabaseHelper {
         children INTEGER NOT NULL,
         infants INTEGER NOT NULL,
         flightClass TEXT NOT NULL,
+        status TEXT NOT NULL,
         FOREIGN KEY (userId) REFERENCES users (id)
       )
     ''');
+  }
+
+  Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
+    if (oldVersion < 2) {
+      await db.execute('ALTER TABLE bookings ADD COLUMN status TEXT NOT NULL DEFAULT \'Confirmed\'');
+    }
   }
 
   Future<int> insertUser(User user) async {
@@ -96,5 +104,15 @@ class DatabaseHelper {
     return List.generate(maps.length, (i) {
       return Booking.fromMap(maps[i]);
     });
+  }
+
+  Future<void> updateBookingStatus(int id, String status) async {
+    final db = await database;
+    await db.update(
+      'bookings',
+      {'status': status},
+      where: 'id = ?',
+      whereArgs: [id],
+    );
   }
 }
