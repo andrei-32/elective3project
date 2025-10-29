@@ -1,3 +1,4 @@
+import 'package:elective3project/database/database_helper.dart';
 import 'package:flutter/material.dart';
 import 'package:elective3project/widgets/booking_tab.dart';
 import 'package:elective3project/widgets/schedules_tab.dart';
@@ -13,25 +14,43 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateMixin {
   late TabController _tabController;
-  final List<Booking> _bookedFlights = [];
+  List<Booking> _bookedFlights = [];
+  int? _userId;
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
+    // We will get the user ID after the first frame is built
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _userId = ModalRoute.of(context)!.settings.arguments as int?;
+      _loadBookings();
+    });
+  }
+
+  Future<void> _loadBookings() async {
+    if (_userId != null) {
+      final db = DatabaseHelper();
+      final bookings = await db.getBookings(_userId!);
+      setState(() {
+        _bookedFlights = bookings;
+      });
+    }
+  }
+
+  Future<void> _bookFlight(Booking booking) async {
+    if (_userId != null) {
+      final db = DatabaseHelper();
+      await db.insertBooking(booking, _userId!);
+      _loadBookings(); // Reload bookings from the database
+      _tabController.animateTo(2); // Switch to the "My Bookings" tab
+    }
   }
 
   @override
   void dispose() {
     _tabController.dispose();
     super.dispose();
-  }
-
-  void _bookFlight(Booking booking) {
-    setState(() {
-      _bookedFlights.add(booking);
-    });
-    _tabController.animateTo(2); // Switch to the "My Bookings" tab
   }
 
   @override

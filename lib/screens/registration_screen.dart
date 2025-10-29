@@ -1,3 +1,5 @@
+import 'package:elective3project/database/database_helper.dart';
+import 'package:elective3project/models/user.dart';
 import 'package:flutter/material.dart';
 
 class RegistrationScreen extends StatefulWidget {
@@ -9,11 +11,15 @@ class RegistrationScreen extends StatefulWidget {
 
 class _RegistrationScreenState extends State<RegistrationScreen> {
   final _formKey = GlobalKey<FormState>();
+  final _usernameController = TextEditingController();
+  final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
 
   @override
   void dispose() {
+    _usernameController.dispose();
+    _emailController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
     super.dispose();
@@ -41,6 +47,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                       const Text('Create Account', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
                       const SizedBox(height: 32.0),
                       TextFormField(
+                        controller: _usernameController,
                         decoration: const InputDecoration(
                           labelText: 'Username',
                           prefixIcon: Icon(Icons.person),
@@ -54,6 +61,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                       ),
                       const SizedBox(height: 16.0),
                       TextFormField(
+                        controller: _emailController,
                         decoration: const InputDecoration(
                           labelText: 'Email',
                           prefixIcon: Icon(Icons.email),
@@ -99,8 +107,15 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                       SizedBox(
                         width: double.infinity,
                         child: ElevatedButton(
-                          onPressed: () {
+                          onPressed: () async {
                             if (_formKey.currentState!.validate()) {
+                              final user = User(
+                                username: _usernameController.text,
+                                email: _emailController.text,
+                                password: _passwordController.text,
+                              );
+                              final db = DatabaseHelper();
+                              await db.insertUser(user);
                               ScaffoldMessenger.of(context).showSnackBar(
                                 const SnackBar(content: Text('Registration Successful')),
                               );

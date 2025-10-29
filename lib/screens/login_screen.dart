@@ -1,7 +1,23 @@
+import 'package:elective3project/database/database_helper.dart';
 import 'package:flutter/material.dart';
 
-class LoginScreen extends StatelessWidget {
+class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
+
+  @override
+  State<LoginScreen> createState() => _LoginScreenState();
+}
+
+class _LoginScreenState extends State<LoginScreen> {
+  final _usernameController = TextEditingController();
+  final _passwordController = TextEditingController();
+
+  @override
+  void dispose() {
+    _usernameController.dispose();
+    _passwordController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -24,16 +40,18 @@ class LoginScreen extends StatelessWidget {
                       size: 80.0,
                     ),
                     const SizedBox(height: 32.0),
-                    const TextField(
-                      decoration: InputDecoration(
+                    TextField(
+                      controller: _usernameController,
+                      decoration: const InputDecoration(
                         labelText: 'Username',
                         prefixIcon: Icon(Icons.person),
                       ),
                     ),
                     const SizedBox(height: 16.0),
-                    const TextField(
+                    TextField(
+                      controller: _passwordController,
                       obscureText: true,
-                      decoration: InputDecoration(
+                      decoration: const InputDecoration(
                         labelText: 'Password',
                         prefixIcon: Icon(Icons.lock),
                       ),
@@ -42,8 +60,19 @@ class LoginScreen extends StatelessWidget {
                     SizedBox(
                       width: double.infinity,
                       child: ElevatedButton(
-                        onPressed: () {
-                          Navigator.pushReplacementNamed(context, '/home');
+                        onPressed: () async {
+                          final db = DatabaseHelper();
+                          final user = await db.getUser(
+                            _usernameController.text,
+                            _passwordController.text,
+                          );
+                          if (user != null) {
+                            Navigator.pushReplacementNamed(context, '/home', arguments: user.id);
+                          } else {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('Invalid username or password')),
+                            );
+                          }
                         },
                         child: const Text('Login'),
                       ),

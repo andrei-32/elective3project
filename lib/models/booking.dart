@@ -1,6 +1,7 @@
 import './flight.dart';
 
 class Booking {
+  final int? id;
   final Flight flight;
   final String tripType;
   final DateTime departureDate;
@@ -11,6 +12,7 @@ class Booking {
   final String flightClass;
 
   Booking({
+    this.id,
     required this.flight,
     required this.tripType,
     required this.departureDate,
@@ -20,4 +22,38 @@ class Booking {
     this.infants = 0,
     required this.flightClass,
   });
+
+  Map<String, dynamic> toMap(int userId) {
+    return {
+      'userId': userId,
+      'destination': flight.destination,
+      'departureTime': flight.departureTime,
+      'arrivalTime': flight.arrivalTime,
+      'tripType': tripType,
+      'departureDate': departureDate.toIso8601String(),
+      'returnDate': returnDate?.toIso8601String(),
+      'adults': adults,
+      'children': children,
+      'infants': infants,
+      'flightClass': flightClass,
+    };
+  }
+
+  factory Booking.fromMap(Map<String, dynamic> map) {
+    return Booking(
+      id: map['id'],
+      flight: Flight(
+        destination: map['destination'],
+        departureTime: map['departureTime'],
+        arrivalTime: map['arrivalTime'],
+      ),
+      tripType: map['tripType'],
+      departureDate: DateTime.parse(map['departureDate']),
+      returnDate: map['returnDate'] != null ? DateTime.parse(map['returnDate']) : null,
+      adults: map['adults'],
+      children: map['children'],
+      infants: map['infants'],
+      flightClass: map['flightClass'],
+    );
+  }
 }
