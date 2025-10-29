@@ -30,10 +30,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
     });
   }
 
-  Future<void> _changeBookingStatus(Booking booking) async {
-    final currentIndex = _statuses.indexOf(booking.status);
-    final nextIndex = (currentIndex + 1) % _statuses.length;
-    final newStatus = _statuses[nextIndex];
+  Future<void> _updateStatus(Booking booking, String newStatus) async {
     final db = DatabaseHelper();
     await db.updateBookingStatus(booking.id!, newStatus);
     _loadBookings();
@@ -59,13 +56,31 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(booking.flight.destination, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                  Text('Booking ID: ${booking.id}', style: const TextStyle(fontWeight: FontWeight.bold)),
                   const SizedBox(height: 8.0),
-                  Text('Status: ${booking.status}'),
+                  Text('User ID: ${booking.toMap(0)['userId']}'), // A bit of a hack to get userId
+                  Text('Destination: ${booking.flight.destination}'),
+                  Text('Departure: ${booking.departureDate.toLocal().toString().split(' ')[0]} at ${booking.flight.departureTime}'),
                   const SizedBox(height: 8.0),
-                  ElevatedButton(
-                    onPressed: () => _changeBookingStatus(booking),
-                    child: const Text('Change Status'),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text('Status:'),
+                      DropdownButton<String>(
+                        value: booking.status,
+                        items: _statuses.map((String status) {
+                          return DropdownMenuItem<String>(
+                            value: status,
+                            child: Text(status),
+                          );
+                        }).toList(),
+                        onChanged: (String? newStatus) {
+                          if (newStatus != null) {
+                            _updateStatus(booking, newStatus);
+                          }
+                        },
+                      ),
+                    ],
                   ),
                 ],
               ),
