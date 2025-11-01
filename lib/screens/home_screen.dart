@@ -17,8 +17,6 @@ class _HomeScreenState extends State<HomeScreen> {
   List<Booking> _bookedFlights = [];
   int? _userId;
 
-  // --- MODIFIED CODE ---
-  // Use asset paths instead of local file paths
   final List<Map<String, String>> _bestOffers = [
     {'name': 'Siargao', 'imageUrl': 'assets/images/siargao.jpg'},
     {'name': 'Palawan', 'imageUrl': 'assets/images/palawan.jpg'},
@@ -27,53 +25,29 @@ class _HomeScreenState extends State<HomeScreen> {
     {'name': 'Siquijor', 'imageUrl': 'assets/images/siquijor.jpg'},
   ];
 
+  // --- FIXED FILE EXTENSIONS ---
+  final List<String> _dealImages = [
+    'assets/images/sale1.png', // Corrected from .jpg to .png
+    'assets/images/sale2.png', // Corrected from .jpg to .png
+  ];
+
   // Using a getter for _homeTab to properly build the dynamic content
   Widget get _homeTab => SingleChildScrollView(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Top Image with Text
-            Stack(
-              alignment: Alignment.bottomLeft,
-              children: [
-                ColorFiltered(
-                  colorFilter: ColorFilter.mode(
-                    Colors.black.withOpacity(0.3),
-                    BlendMode.darken,
-                  ),
-                  child: Image.network(
-                    'https://images.unsplash.com/photo-1540544855428-b5e6275feed7?q=80&w=1587&auto=format&fit=crop',
-                    width: double.infinity,
-                    height: 200,
-                    fit: BoxFit.cover,
-                  ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: const [
-                      Text(
-                        'Mabuhay!',
-                        style: TextStyle(
-                          fontSize: 28,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                        ),
-                      ),
-                      SizedBox(height: 4),
-                      Text(
-                        "Expedition time? Let's plan your trip",
-                        style: TextStyle(
-                          fontSize: 16,
-                          color: Colors.white,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
+            // Top Image without Text
+            ClipRRect(
+              borderRadius: const BorderRadius.vertical(bottom: Radius.circular(16)),
+              child: Image.asset(
+                'assets/images/intro.jpg',
+                width: double.infinity,
+                height: 200,
+                fit: BoxFit.cover,
+                errorBuilder: (context, error, stackTrace) {
+                  return const Icon(Icons.broken_image, size: 50, color: Colors.red);
+                },
+              ),
             ),
             const SizedBox(height: 16),
 
@@ -102,14 +76,11 @@ class _HomeScreenState extends State<HomeScreen> {
                         children: [
                           ClipRRect(
                             borderRadius: BorderRadius.circular(8.0),
-                            // --- MODIFIED CODE ---
-                            // Use Image.asset() to load from your project assets
                             child: Image.asset(
                               offer['imageUrl']!,
                               width: 200,
                               height: 150,
                               fit: BoxFit.cover,
-                              // Add an error builder for debugging
                               errorBuilder: (context, error, stackTrace) {
                                 return const Icon(Icons.broken_image, size: 50, color: Colors.red);
                               },
@@ -144,16 +115,19 @@ class _HomeScreenState extends State<HomeScreen> {
               height: 150,
               child: ListView.builder(
                 scrollDirection: Axis.horizontal,
-                itemCount: 2,
+                itemCount: _dealImages.length,
                 itemBuilder: (context, index) {
                   return Padding(
-                    padding: EdgeInsets.only(left: 16.0, right: index == 1 ? 16.0 : 0),
+                    padding: EdgeInsets.only(left: 16.0, right: index == _dealImages.length - 1 ? 16.0 : 0),
                     child: ClipRRect(
                       borderRadius: BorderRadius.circular(8.0),
-                      child: Image.network(
-                        'https://picsum.photos/seed/deal${index + 1}/300/150',
+                      child: Image.asset(
+                        _dealImages[index],
                         width: 300,
                         fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) {
+                           return const Icon(Icons.broken_image, size: 50, color: Colors.red);
+                        },
                       ),
                     ),
                   );
