@@ -28,6 +28,15 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      appBar: AppBar(
+        title: Row(
+          children: const [
+            Icon(Icons.flight_takeoff),
+            SizedBox(width: 8),
+            Text('FlyQuest', style: TextStyle(fontWeight: FontWeight.bold)),
+          ],
+        ),
+      ),
       body: Center(
         child: SingleChildScrollView(
           child: Padding(
@@ -122,7 +131,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                               Navigator.pop(context);
                             }
                           },
-                          child: const Text('Register'),
+                          child: const Text('Register', style: TextStyle(color: Color(0xFF000080))),
                         ),
                       ),
                       const SizedBox(height: 16.0),

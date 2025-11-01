@@ -12,7 +12,7 @@ class AdminHomeScreen extends StatefulWidget {
 class _AdminHomeScreenState extends State<AdminHomeScreen> {
   List<Booking> _bookings = [];
   final List<String> _statuses = [
-    'Scheduled', 'Confirmed', 'On Time', 'Delayed', 'Cancelled', 'Rescheduled', 
+    'Scheduled', 'Confirmed', 'On Time', 'Delayed', 'Cancelled', 'Rescheduled',
     'Check-in Open', 'Check-in Closed', 'Boarding Soon', 'Boarding', 'Gate Closed'
   ];
 
@@ -40,7 +40,13 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Admin Dashboard'),
+        title: Row(
+          children: const [
+            Icon(Icons.flight_takeoff),
+            SizedBox(width: 8),
+            Text('FlyQuest Admin', style: TextStyle(fontWeight: FontWeight.bold)),
+          ],
+        ),
       ),
       body: ListView.builder(
         padding: const EdgeInsets.all(8.0),

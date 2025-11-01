@@ -14,20 +14,30 @@ class MainApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    const navyBlue = Color(0xFF000080);
+    const gold = Color(0xFFFFD700);
+    const white = Colors.white;
+
     return MaterialApp(
-      title: 'Flight Booking',
+      title: 'FlyQuest',
       theme: ThemeData(
-        primarySwatch: Colors.blue,
+        primaryColor: navyBlue,
+        colorScheme: const ColorScheme.light(
+          primary: navyBlue,
+          secondary: gold,
+          onPrimary: white,
+          onSecondary: Colors.black,
+        ),
         visualDensity: VisualDensity.adaptivePlatformDensity,
-        scaffoldBackgroundColor: Colors.grey[200],
+        scaffoldBackgroundColor: white,
         appBarTheme: const AppBarTheme(
-          backgroundColor: Colors.blue,
-          foregroundColor: Colors.white,
+          backgroundColor: navyBlue,
+          foregroundColor: gold,
         ),
         elevatedButtonTheme: ElevatedButtonThemeData(
           style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.blue,
-            foregroundColor: Colors.white,
+            backgroundColor: gold,
+            foregroundColor: navyBlue,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(8.0),
             ),
@@ -39,7 +49,12 @@ class MainApp extends StatelessWidget {
             borderRadius: BorderRadius.circular(8.0),
           ),
           filled: true,
-          fillColor: Colors.white,
+          fillColor: white,
+        ),
+        bottomNavigationBarTheme: const BottomNavigationBarThemeData(
+          backgroundColor: navyBlue,
+          selectedItemColor: gold,
+          unselectedItemColor: white,
         ),
       ),
       initialRoute: '/',

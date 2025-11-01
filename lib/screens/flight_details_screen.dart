@@ -56,10 +56,17 @@ class _FlightDetailsScreenState extends State<FlightDetailsScreen> {
   @override
   Widget build(BuildContext context) {
     final booking = ModalRoute.of(context)!.settings.arguments as Booking;
+    const gold = Color(0xFFFFD700);
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Flight Details'),
+        title: Row(
+          children: const [
+            Icon(Icons.flight_takeoff),
+            SizedBox(width: 8),
+            Text('FlyQuest'),
+          ],
+        ),
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -80,7 +87,7 @@ class _FlightDetailsScreenState extends State<FlightDetailsScreen> {
                     Text(booking.flight.destination, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
                     Chip(
                       label: Text(booking.status),
-                      backgroundColor: booking.status == 'Cancelled' ? Colors.red : Colors.green,
+                      backgroundColor: booking.status == 'Cancelled' ? Colors.red : gold,
                     ),
                   ],
                 ),
@@ -96,7 +103,7 @@ class _FlightDetailsScreenState extends State<FlightDetailsScreen> {
                 Text('Trip Type: ${booking.tripType}', style: const TextStyle(fontSize: 16)),
                 if (booking.returnDate != null)
                   Text('Return Date: ${booking.returnDate!.toLocal().toString().split(' ')[0]}',
-                      style: const TextStyle(fontSize:.16)),
+                      style: const TextStyle(fontSize: 16)),
                 const SizedBox(height: 32.0),
                 if (booking.status != 'Cancelled')
                   SizedBox(

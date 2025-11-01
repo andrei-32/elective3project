@@ -22,6 +22,15 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      appBar: AppBar(
+        title: Row(
+          children: const [
+            Icon(Icons.flight_takeoff),
+            SizedBox(width: 8),
+            Text('FlyQuest', style: TextStyle(fontWeight: FontWeight.bold)),
+          ],
+        ),
+      ),
       body: Center(
         child: SingleChildScrollView(
           child: Padding(
@@ -78,7 +87,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             }
                           }
                         },
-                        child: const Text('Login'),
+                        child: const Text('Login', style: TextStyle(color: Color(0xFF000080)),),
                       ),
                     ),
                     const SizedBox(height: 16.0),
