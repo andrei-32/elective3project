@@ -169,19 +169,6 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  Future<void> _bookFlight(Booking booking) async {
-    if (_userId != null) {
-      final db = DatabaseHelper();
-      await db.insertBooking(booking, _userId!);
-      await _loadBookings();
-      if (mounted) {
-        setState(() {
-          _selectedIndex = 3;
-        });
-      }
-    }
-  }
-
   void _onItemTapped(int index) {
     setState(() {
       _selectedIndex = index;
@@ -193,7 +180,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     final List<Widget> _widgetOptions = <Widget>[
       _homeTab,
-      BookingTab(onBookFlight: _bookFlight, initialDestination: _initialDestination),
+      BookingTab(initialDestination: _initialDestination),
       const SchedulesTab(),
       BookedFlightsTab(bookedFlights: _bookedFlights, onRefresh: _loadBookings),
       _profileTab,

@@ -1,16 +1,12 @@
-import 'package:elective3project/models/booking.dart';
-import 'package:elective3project/models/flight.dart';
-import 'package:elective3project/widgets/destination_search_screen.dart';
+import 'package:elective3project/screens/flight_results_screen.dart';
 import 'package:elective3project/widgets/passenger_counter.dart';
 import 'package:flutter/material.dart';
 
 class BookingTab extends StatefulWidget {
-  final Function(Booking) onBookFlight;
   final String? initialDestination;
 
   const BookingTab({
     super.key,
-    required this.onBookFlight,
     this.initialDestination,
   });
 
@@ -23,7 +19,7 @@ class _BookingTabState extends State<BookingTab> {
   String _tripType = 'one way';
   String? _selectedIslandGroup;
   String? _selectedDestination;
-  DateTime? _departureDate;
+  DateTime _departureDate = DateTime.now();
   DateTime? _returnDate;
   int _adults = 1;
   int _children = 0;
@@ -32,7 +28,7 @@ class _BookingTabState extends State<BookingTab> {
 
   final Map<String, List<String>> _destinations = {
     'Luzon': [
-      'Manila', 'Clark', 'Subic', 'Baguio', 'Basco', 'Laoag',
+      'Clark', 'Subic', 'Baguio', 'Basco', 'Laoag',
       'Tuguegarao', 'Cauayan', 'Vigan', 'Naga', 'Legazpi',
       'Virac', 'Marinduque', 'Masbate', 'Tablas', 'San Jose',
       'Busuanga', 'El Nido', 'Cuyo', 'Palawan', 'PuertoPrincesa'
@@ -49,15 +45,12 @@ class _BookingTabState extends State<BookingTab> {
     ]
   };
 
-  List<String> _currentCities = [];
-
   final List<String> _tripTypes = ['one way', 'round trip', 'multi city'];
   final List<String> _flightClasses = ['economy', 'premium economy', 'business', 'first class'];
 
   @override
   void initState() {
     super.initState();
-    // Sort destinations alphabetically
     for (var key in _destinations.keys) {
       _destinations[key]!.sort();
     }
@@ -76,11 +69,9 @@ class _BookingTabState extends State<BookingTab> {
   }
 
   void _setInitialDestination(String destination) {
-    // Special mappings for popular spots to their nearest airport
     final Map<String, String> destinationMap = {
       'Boracay': 'Kalibo',
       'Siquijor': 'Bohol',
-      // Direct mappings for clarity
       'Siargao': 'Siargao',
       'Palawan': 'Palawan',
       'Bohol': 'Bohol',
@@ -89,7 +80,6 @@ class _BookingTabState extends State<BookingTab> {
     String finalDestination = destinationMap[destination] ?? destination;
     
     String? group;
-    // Find which island group the finalDestination belongs to
     for (var entry in _destinations.entries) {
       if (entry.value.contains(finalDestination)) {
         group = entry.key;
@@ -97,16 +87,13 @@ class _BookingTabState extends State<BookingTab> {
       }
     }
 
-    // If a group is found, update the state
     if (group != null) {
       setState(() {
         _selectedIslandGroup = group;
-        _currentCities = _destinations[group]!;
         _selectedDestination = finalDestination;
       });
     }
   }
-
 
   Future<void> _selectDate(BuildContext context, {bool isDeparture = true}) async {
     final DateTime? picked = await showDatePicker(
@@ -126,42 +113,98 @@ class _BookingTabState extends State<BookingTab> {
     }
   }
 
-  Future<void> _selectDestination(BuildContext context) async {
-    final selected = await Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => DestinationSearchScreen(destinations: _currentCities),
-      ),
+  Future<void> _selectDestinationDialog(BuildContext context) async {
+    final String? result = await showDialog<String>(
+      context: context,
+      builder: (BuildContext context) {
+        String? tempSelectedGroup;
+
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return AlertDialog(
+              title: Text(tempSelectedGroup == null ? 'Select Island Group' : 'Select Destination'),
+              content: SizedBox(
+                width: double.maxFinite,
+                child: tempSelectedGroup == null
+                    ? ListView(
+                        shrinkWrap: true,
+                        children: _destinations.keys.map((group) {
+                          return ListTile(
+                            title: Text(group),
+                            onTap: () {
+                              setState(() {
+                                tempSelectedGroup = group;
+                              });
+                            },
+                          );
+                        }).toList(),
+                      )
+                    : ListView(
+                        shrinkWrap: true,
+                        children: _destinations[tempSelectedGroup!]!.map((destination) {
+                          return ListTile(
+                            title: Text(destination),
+                            onTap: () {
+                              Navigator.of(context).pop(destination);
+                            },
+                          );
+                        }).toList(),
+                      ),
+              ),
+              actions: [
+                if (tempSelectedGroup != null)
+                  TextButton(
+                    onPressed: () {
+                      setState(() {
+                        tempSelectedGroup = null;
+                      });
+                    },
+                    child: const Text('Back'),
+                  ),
+                TextButton(
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                  },
+                  child: const Text('Cancel'),
+                ),
+              ],
+            );
+          },
+        );
+      },
     );
 
-    if (selected != null) {
+    if (result != null) {
       setState(() {
-        _selectedDestination = selected;
+        _selectedDestination = result;
+        for (var entry in _destinations.entries) {
+          if (entry.value.contains(result)) {
+            _selectedIslandGroup = entry.key;
+            break;
+          }
+        }
       });
     }
   }
 
-  void _onBookFlight() {
+  void _searchFlights() {
     if (_formKey.currentState!.validate()) {
-      final flight = Flight(
-        destination: _selectedDestination!,
-        departureTime: 'TBA', // Placeholder
-        arrivalTime: 'TBA', // Placeholder
-      );
+      if (_selectedDestination == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Please select a destination.')),
+        );
+        return;
+      }
 
-      final booking = Booking(
-        flight: flight,
-        tripType: _tripType,
-        departureDate: _departureDate!,
-        returnDate: _returnDate,
-        adults: _adults,
-        children: _children,
-        infants: _infants,
-        flightClass: _flightClass,
-      );
-      widget.onBookFlight(booking);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Flight to ${_selectedDestination!} booked!')),
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => FlightResultsScreen(
+            origin: 'Manila',
+            destination: _selectedDestination!,
+            departureDate: _departureDate,
+          ),
+        ),
       );
     }
   }
@@ -180,46 +223,62 @@ class _BookingTabState extends State<BookingTab> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text('Book Your Flight', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+                const Text('Search Your Flight', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
                 const SizedBox(height: 24.0),
                 DropdownButtonFormField<String>(
                   value: _tripType,
-                  decoration: const InputDecoration(labelText: 'Trip Type', prefixIcon: Icon(Icons.compare_arrows)),
+                  decoration: const InputDecoration(labelText: 'Trip Type', prefixIcon: Icon(Icons.compare_arrows), border: OutlineInputBorder()),
                   items: _tripTypes.map((type) => DropdownMenuItem(value: type, child: Text(type))).toList(),
                   onChanged: (value) => setState(() => _tripType = value!),
                 ),
                 const SizedBox(height: 16.0),
-                DropdownButtonFormField<String>(
-                  value: _selectedIslandGroup,
-                  decoration: const InputDecoration(labelText: 'Island Group', prefixIcon: Icon(Icons.map)),
-                  items: _destinations.keys.map((group) => DropdownMenuItem(value: group, child: Text(group))).toList(),
-                  onChanged: (value) {
-                    setState(() {
-                      _selectedIslandGroup = value;
-                      _currentCities = _destinations[value] ?? [];
-                      _currentCities.sort(); // Ensure it's sorted
-                      _selectedDestination = null; // Reset destination when group changes
-                    });
-                  },
-                  validator: (value) => value == null ? 'Please select an island group' : null,
-                  hint: const Text('Select an Island Group'),
-                ),
-                if (_selectedIslandGroup != null) ...[
-                  const SizedBox(height: 16.0),
-                  InkWell(
-                    onTap: () => _selectDestination(context),
-                    child: InputDecorator(
-                      decoration: const InputDecoration(
-                        labelText: 'Destination',
-                        prefixIcon: Icon(Icons.flight_takeoff),
-                      ),
-                      child: Text(
-                        _selectedDestination ?? 'Select a destination',
-                        overflow: TextOverflow.ellipsis,
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('FROM', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.grey.shade700)),
+                          const SizedBox(height: 8),
+                          InputDecorator(
+                            decoration: const InputDecoration(
+                              prefixIcon: Icon(Icons.flight_takeoff),
+                              border: OutlineInputBorder(),
+                              contentPadding: EdgeInsets.symmetric(horizontal: 12.0, vertical: 16.0),
+                            ),
+                            child: const Text('Manila', style: TextStyle(fontSize: 16)),
+                          ),
+                        ],
                       ),
                     ),
-                  ),
-                ],
+                    const SizedBox(width: 16.0),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('TO', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.grey.shade700)),
+                          const SizedBox(height: 8),
+                          InkWell(
+                            onTap: () => _selectDestinationDialog(context),
+                            child: InputDecorator(
+                              decoration: const InputDecoration(
+                                prefixIcon: Icon(Icons.flight_land),
+                                border: OutlineInputBorder(),
+                                contentPadding: EdgeInsets.symmetric(horizontal: 12.0, vertical: 16.0),
+                              ),
+                              child: Text(
+                                _selectedDestination ?? 'Select Destination',
+                                style: const TextStyle(fontSize: 16),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
                 const SizedBox(height: 16.0),
                 Row(
                   children: [
@@ -227,8 +286,8 @@ class _BookingTabState extends State<BookingTab> {
                       child: InkWell(
                         onTap: () => _selectDate(context, isDeparture: true),
                         child: InputDecorator(
-                          decoration: const InputDecoration(labelText: 'Departure Date', prefixIcon: Icon(Icons.calendar_today)),
-                          child: Text(_departureDate != null ? '${_departureDate!.toLocal()}'.split(' ')[0] : 'Select Date'),
+                          decoration: const InputDecoration(labelText: 'Departure Date', prefixIcon: Icon(Icons.calendar_today), border: OutlineInputBorder()),
+                          child: Text('${_departureDate.toLocal()}'.split(' ')[0]),
                         ),
                       ),
                     ),
@@ -238,7 +297,7 @@ class _BookingTabState extends State<BookingTab> {
                         child: InkWell(
                           onTap: () => _selectDate(context, isDeparture: false),
                           child: InputDecorator(
-                            decoration: const InputDecoration(labelText: 'Return Date', prefixIcon: Icon(Icons.calendar_today)),
+                            decoration: const InputDecoration(labelText: 'Return Date', prefixIcon: Icon(Icons.calendar_today), border: OutlineInputBorder()),
                             child: Text(_returnDate != null ? '${_returnDate!.toLocal()}'.split(' ')[0] : 'Select Date'),
                           ),
                         ),
@@ -254,14 +313,14 @@ class _BookingTabState extends State<BookingTab> {
                 const SizedBox(height: 24.0),
                 DropdownButtonFormField<String>(
                   value: _flightClass,
-                  decoration: const InputDecoration(labelText: 'Class', prefixIcon: Icon(Icons.airline_seat_recline_normal)),
+                  decoration: const InputDecoration(labelText: 'Class', prefixIcon: Icon(Icons.airline_seat_recline_normal), border: OutlineInputBorder()),
                   items: _flightClasses.map((fClass) => DropdownMenuItem(value: fClass, child: Text(fClass))).toList(),
                   onChanged: (value) => setState(() => _flightClass = value!),
                 ),
                 const SizedBox(height: 32.0),
                 SizedBox(
                   width: double.infinity,
-                  child: ElevatedButton(onPressed: _onBookFlight, child: const Text('Book Flight')),
+                  child: ElevatedButton(onPressed: _searchFlights, child: const Text('Search Flights')),
                 ),
               ],
             ),
