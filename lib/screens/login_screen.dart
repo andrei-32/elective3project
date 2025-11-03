@@ -24,10 +24,16 @@ class _LoginScreenState extends State<LoginScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Row(
-          children: const [
-            Icon(Icons.flight_takeoff),
-            SizedBox(width: 8),
-            Text('FlyQuest', style: TextStyle(fontWeight: FontWeight.bold)),
+          children: [
+            Image.asset(
+              'assets/images/logo.png',
+              height: 30,
+              errorBuilder: (context, error, stackTrace) {
+                return const Icon(Icons.flight_takeoff);
+              },
+            ),
+            const SizedBox(width: 8),
+            const Text('FLYQUEST', style: TextStyle(fontWeight: FontWeight.bold)),
           ],
         ),
       ),
@@ -45,8 +51,12 @@ class _LoginScreenState extends State<LoginScreen> {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const FlutterLogo(
-                      size: 80.0,
+                    Image.asset(
+                      'assets/images/logo.png',
+                      height: 80.0,
+                      errorBuilder: (context, error, stackTrace) {
+                        return const FlutterLogo(size: 80.0);
+                      },
                     ),
                     const SizedBox(height: 32.0),
                     TextField(

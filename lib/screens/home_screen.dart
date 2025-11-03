@@ -123,7 +123,8 @@ class _HomeScreenState extends State<HomeScreen> {
                       borderRadius: BorderRadius.circular(8.0),
                       child: Image.asset(
                         _dealImages[index],
-                        width: 300,
+                        width: 300, 
+                        height: 150,
                         fit: BoxFit.cover,
                         errorBuilder: (context, error, stackTrace) {
                            return const Icon(Icons.broken_image, size: 50, color: Colors.red);
@@ -197,10 +198,17 @@ class _HomeScreenState extends State<HomeScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Row(
-          children: const [
-            Icon(Icons.flight_takeoff),
-            SizedBox(width: 8),
-            Text('FlyQuest', style: TextStyle(fontWeight: FontWeight.bold)),
+          children: [
+            Image.asset(
+              'assets/images/logo.png',
+              height: 30, // Set a height for your logo
+              errorBuilder: (context, error, stackTrace) {
+                // Fallback to an icon if the logo fails to load
+                return const Icon(Icons.flight_takeoff);
+              },
+            ),
+            const SizedBox(width: 8),
+            const Text('FLYQUEST', style: TextStyle(fontWeight: FontWeight.bold)),
           ],
         ),
       ),

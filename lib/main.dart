@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'screens/login_screen.dart';
 import 'screens/registration_screen.dart';
 import 'screens/home_screen.dart';
+import 'screens/splash_screen.dart'; // Import the new splash screen
 
 void main() {
   runApp(const MainApp());
@@ -57,9 +58,11 @@ class MainApp extends StatelessWidget {
           unselectedItemColor: white,
         ),
       ),
+      // Set the splash screen as the initial route
       initialRoute: '/',
       routes: {
-        '/': (context) => const LoginScreen(),
+        '/': (context) => const SplashScreen(), // The app will start here
+        '/login': (context) => const LoginScreen(),
         '/registration': (context) => const RegistrationScreen(),
         '/home': (context) => const HomeScreen(),
         '/flight_details': (context) => const FlightDetailsScreen(),
