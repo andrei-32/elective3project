@@ -40,7 +40,10 @@ class BookedFlightsTab extends StatelessWidget {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text(flight.destination, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                      Expanded(
+                        child: Text(flight.destination, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                      ),
+                      const SizedBox(width: 8), // Add some spacing
                       Chip(
                         label: Text(booking.status),
                         backgroundColor: booking.status == 'Cancelled' ? Colors.red : Colors.green,

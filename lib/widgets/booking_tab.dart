@@ -1,12 +1,18 @@
-import 'package:flutter/material.dart';
-import 'package:elective3project/models/flight.dart';
 import 'package:elective3project/models/booking.dart';
+import 'package:elective3project/models/flight.dart';
+import 'package:elective3project/widgets/destination_search_screen.dart';
 import 'package:elective3project/widgets/passenger_counter.dart';
+import 'package:flutter/material.dart';
 
 class BookingTab extends StatefulWidget {
   final Function(Booking) onBookFlight;
+  final String? initialDestination;
 
-  const BookingTab({super.key, required this.onBookFlight});
+  const BookingTab({
+    super.key,
+    required this.onBookFlight,
+    this.initialDestination,
+  });
 
   @override
   State<BookingTab> createState() => _BookingTabState();
@@ -15,6 +21,7 @@ class BookingTab extends StatefulWidget {
 class _BookingTabState extends State<BookingTab> {
   final _formKey = GlobalKey<FormState>();
   String _tripType = 'one way';
+  String? _selectedIslandGroup;
   String? _selectedDestination;
   DateTime? _departureDate;
   DateTime? _returnDate;
@@ -23,15 +30,83 @@ class _BookingTabState extends State<BookingTab> {
   int _infants = 0;
   String _flightClass = 'economy';
 
-  final List<String> _destinations = ['Japan', 'South Korea', 'Singapore', 'Thailand'];
+  final Map<String, List<String>> _destinations = {
+    'Luzon': [
+      'Manila', 'Clark', 'Subic', 'Baguio', 'Basco', 'Laoag',
+      'Tuguegarao', 'Cauayan', 'Vigan', 'Naga', 'Legazpi',
+      'Virac', 'Marinduque', 'Masbate', 'Tablas', 'San Jose',
+      'Busuanga', 'El Nido', 'Cuyo', 'Palawan', 'PuertoPrincesa'
+    ],
+    'Visayas': [
+      'Cebu', 'Bacolod', 'Iloilo', 'Kalibo', 'Caticlan',
+      'Roxas', 'Tacloban', 'Ormoc', 'Bohol', 'Dumaguete',
+      'Catarman', 'Biliran', 'Maasin', 'Bantayan'
+    ],
+    'Mindanao': [
+      'Davao', 'GenSan', 'Cdo', 'Butuan', 'Surigao', 'Siargao',
+      'Tandag', 'Dipolog', 'Pagadian', 'Ozamiz', 'Cotabato',
+      'Zamboanga', 'Jolo', 'TawiTawi', 'Camiguin'
+    ]
+  };
+
+  List<String> _currentCities = [];
+
   final List<String> _tripTypes = ['one way', 'round trip', 'multi city'];
   final List<String> _flightClasses = ['economy', 'premium economy', 'business', 'first class'];
-  final Map<String, Map<String, String>> _flightTimes = {
-    'Japan': {'departure': '10:00 AM', 'arrival': '03:00 PM'},
-    'South Korea': {'departure': '12:00 PM', 'arrival': '05:00 PM'},
-    'Singapore': {'departure': '02:00 PM', 'arrival': '07:00 PM'},
-    'Thailand': {'departure': '04:00 PM', 'arrival': '09:00 PM'},
-  };
+
+  @override
+  void initState() {
+    super.initState();
+    // Sort destinations alphabetically
+    for (var key in _destinations.keys) {
+      _destinations[key]!.sort();
+    }
+    if (widget.initialDestination != null) {
+      _setInitialDestination(widget.initialDestination!);
+    }
+  }
+
+  @override
+  void didUpdateWidget(BookingTab oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.initialDestination != null &&
+        widget.initialDestination != oldWidget.initialDestination) {
+      _setInitialDestination(widget.initialDestination!);
+    }
+  }
+
+  void _setInitialDestination(String destination) {
+    // Special mappings for popular spots to their nearest airport
+    final Map<String, String> destinationMap = {
+      'Boracay': 'Kalibo',
+      'Siquijor': 'Bohol',
+      // Direct mappings for clarity
+      'Siargao': 'Siargao',
+      'Palawan': 'Palawan',
+      'Bohol': 'Bohol',
+    };
+
+    String finalDestination = destinationMap[destination] ?? destination;
+    
+    String? group;
+    // Find which island group the finalDestination belongs to
+    for (var entry in _destinations.entries) {
+      if (entry.value.contains(finalDestination)) {
+        group = entry.key;
+        break;
+      }
+    }
+
+    // If a group is found, update the state
+    if (group != null) {
+      setState(() {
+        _selectedIslandGroup = group;
+        _currentCities = _destinations[group]!;
+        _selectedDestination = finalDestination;
+      });
+    }
+  }
+
 
   Future<void> _selectDate(BuildContext context, {bool isDeparture = true}) async {
     final DateTime? picked = await showDatePicker(
@@ -51,12 +126,27 @@ class _BookingTabState extends State<BookingTab> {
     }
   }
 
+  Future<void> _selectDestination(BuildContext context) async {
+    final selected = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => DestinationSearchScreen(destinations: _currentCities),
+      ),
+    );
+
+    if (selected != null) {
+      setState(() {
+        _selectedDestination = selected;
+      });
+    }
+  }
+
   void _onBookFlight() {
     if (_formKey.currentState!.validate()) {
       final flight = Flight(
         destination: _selectedDestination!,
-        departureTime: _flightTimes[_selectedDestination!]!['departure']!,
-        arrivalTime: _flightTimes[_selectedDestination!]!['arrival']!,
+        departureTime: 'TBA', // Placeholder
+        arrivalTime: 'TBA', // Placeholder
       );
 
       final booking = Booking(
@@ -100,13 +190,36 @@ class _BookingTabState extends State<BookingTab> {
                 ),
                 const SizedBox(height: 16.0),
                 DropdownButtonFormField<String>(
-                  value: _selectedDestination,
-                  decoration: const InputDecoration(labelText: 'Destination', prefixIcon: Icon(Icons.flight_takeoff)),
-                  items: _destinations.map((dest) => DropdownMenuItem(value: dest, child: Text(dest))).toList(),
-                  onChanged: (value) => setState(() => _selectedDestination = value),
-                  validator: (value) => value == null ? 'Please select a destination' : null,
-                  hint: const Text('Select a destination'),
+                  value: _selectedIslandGroup,
+                  decoration: const InputDecoration(labelText: 'Island Group', prefixIcon: Icon(Icons.map)),
+                  items: _destinations.keys.map((group) => DropdownMenuItem(value: group, child: Text(group))).toList(),
+                  onChanged: (value) {
+                    setState(() {
+                      _selectedIslandGroup = value;
+                      _currentCities = _destinations[value] ?? [];
+                      _currentCities.sort(); // Ensure it's sorted
+                      _selectedDestination = null; // Reset destination when group changes
+                    });
+                  },
+                  validator: (value) => value == null ? 'Please select an island group' : null,
+                  hint: const Text('Select an Island Group'),
                 ),
+                if (_selectedIslandGroup != null) ...[
+                  const SizedBox(height: 16.0),
+                  InkWell(
+                    onTap: () => _selectDestination(context),
+                    child: InputDecorator(
+                      decoration: const InputDecoration(
+                        labelText: 'Destination',
+                        prefixIcon: Icon(Icons.flight_takeoff),
+                      ),
+                      child: Text(
+                        _selectedDestination ?? 'Select a destination',
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ),
+                ],
                 const SizedBox(height: 16.0),
                 Row(
                   children: [

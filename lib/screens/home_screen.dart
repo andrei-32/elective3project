@@ -16,6 +16,7 @@ class _HomeScreenState extends State<HomeScreen> {
   int _selectedIndex = 0;
   List<Booking> _bookedFlights = [];
   int? _userId;
+  String? _initialDestination; // To hold the destination from the home screen
 
   final List<Map<String, String>> _bestOffers = [
     {'name': 'Siargao', 'imageUrl': 'assets/images/siargao.jpg'},
@@ -25,18 +26,23 @@ class _HomeScreenState extends State<HomeScreen> {
     {'name': 'Siquijor', 'imageUrl': 'assets/images/siquijor.jpg'},
   ];
 
-  // --- FIXED FILE EXTENSIONS ---
   final List<String> _dealImages = [
-    'assets/images/sale1.png', // Corrected from .jpg to .png
-    'assets/images/sale2.png', // Corrected from .jpg to .png
+    'assets/images/sale1.png',
+    'assets/images/sale2.png',
   ];
 
-  // Using a getter for _homeTab to properly build the dynamic content
+  // Navigate to the booking tab with a pre-selected destination
+  void _navigateToBooking(String destination) {
+    setState(() {
+      _initialDestination = destination;
+      _selectedIndex = 1; // Index of the BookingTab
+    });
+  }
+
   Widget get _homeTab => SingleChildScrollView(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Top Image without Text
             ClipRRect(
               borderRadius: const BorderRadius.vertical(bottom: Radius.circular(16)),
               child: Image.asset(
@@ -44,14 +50,9 @@ class _HomeScreenState extends State<HomeScreen> {
                 width: double.infinity,
                 height: 200,
                 fit: BoxFit.cover,
-                errorBuilder: (context, error, stackTrace) {
-                  return const Icon(Icons.broken_image, size: 50, color: Colors.red);
-                },
               ),
             ),
             const SizedBox(height: 16),
-
-            // Explore Our Best Offers From
             const Padding(
               padding: EdgeInsets.symmetric(horizontal: 16.0),
               child: Text(
@@ -61,7 +62,7 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
             const SizedBox(height: 8),
             SizedBox(
-              height: 180, // Increased height for text
+              height: 180, // Adjusted height for clickable image card
               child: ListView.builder(
                 scrollDirection: Axis.horizontal,
                 itemCount: _bestOffers.length,
@@ -71,29 +72,36 @@ class _HomeScreenState extends State<HomeScreen> {
                     padding: EdgeInsets.only(left: 16.0, right: index == _bestOffers.length - 1 ? 16.0 : 0),
                     child: SizedBox(
                       width: 200,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          ClipRRect(
-                            borderRadius: BorderRadius.circular(8.0),
-                            child: Image.asset(
-                              offer['imageUrl']!,
-                              width: 200,
-                              height: 150,
-                              fit: BoxFit.cover,
-                              errorBuilder: (context, error, stackTrace) {
-                                return const Icon(Icons.broken_image, size: 50, color: Colors.red);
-                              },
+                      child: GestureDetector( // Make the entire card clickable
+                        onTap: () => _navigateToBooking(offer['name']!),
+                        child: Stack(
+                          children: [
+                            ClipRRect(
+                              borderRadius: BorderRadius.circular(8.0),
+                              child: Image.asset(
+                                offer['imageUrl']!,
+                                width: 200,
+                                height: 180, // Image fills the card
+                                fit: BoxFit.cover,
+                              ),
                             ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            offer['name']!,
-                            style: const TextStyle(fontWeight: FontWeight.bold),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ],
+                            Positioned(
+                              top: 8,
+                              left: 8,
+                              child: Text(
+                                offer['name']!,
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 18,
+                                  shadows: [
+                                    Shadow(blurRadius: 10.0, color: Colors.black)
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                   );
@@ -101,8 +109,6 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
             const SizedBox(height: 24),
-
-            // Best Deal for you
             const Padding(
               padding: EdgeInsets.symmetric(horizontal: 16.0),
               child: Text(
@@ -123,12 +129,9 @@ class _HomeScreenState extends State<HomeScreen> {
                       borderRadius: BorderRadius.circular(8.0),
                       child: Image.asset(
                         _dealImages[index],
-                        width: 300, 
+                        width: 300,
                         height: 150,
                         fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) {
-                           return const Icon(Icons.broken_image, size: 50, color: Colors.red);
-                        },
                       ),
                     ),
                   );
@@ -139,12 +142,12 @@ class _HomeScreenState extends State<HomeScreen> {
           ],
         ),
       );
+
   final Widget _profileTab = const Center(child: Text('Profile'));
 
   @override
   void initState() {
     super.initState();
-    // We will get the user ID after the first frame is built
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final args = ModalRoute.of(context)!.settings.arguments;
       if (args is int) {
@@ -170,10 +173,10 @@ class _HomeScreenState extends State<HomeScreen> {
     if (_userId != null) {
       final db = DatabaseHelper();
       await db.insertBooking(booking, _userId!);
-      await _loadBookings(); // Reload bookings from the database
+      await _loadBookings();
       if (mounted) {
         setState(() {
-          _selectedIndex = 3; // Switch to the "My Bookings" tab
+          _selectedIndex = 3;
         });
       }
     }
@@ -182,6 +185,7 @@ class _HomeScreenState extends State<HomeScreen> {
   void _onItemTapped(int index) {
     setState(() {
       _selectedIndex = index;
+      _initialDestination = null; // Reset when manually changing tabs
     });
   }
 
@@ -189,7 +193,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     final List<Widget> _widgetOptions = <Widget>[
       _homeTab,
-      BookingTab(onBookFlight: _bookFlight),
+      BookingTab(onBookFlight: _bookFlight, initialDestination: _initialDestination),
       const SchedulesTab(),
       BookedFlightsTab(bookedFlights: _bookedFlights, onRefresh: _loadBookings),
       _profileTab,
@@ -201,11 +205,7 @@ class _HomeScreenState extends State<HomeScreen> {
           children: [
             Image.asset(
               'assets/images/logo.png',
-              height: 30, // Set a height for your logo
-              errorBuilder: (context, error, stackTrace) {
-                // Fallback to an icon if the logo fails to load
-                return const Icon(Icons.flight_takeoff);
-              },
+              height: 30,
             ),
             const SizedBox(width: 8),
             const Text('FLYQUEST', style: TextStyle(fontWeight: FontWeight.bold)),
@@ -216,28 +216,13 @@ class _HomeScreenState extends State<HomeScreen> {
         child: _widgetOptions.elementAt(_selectedIndex),
       ),
       bottomNavigationBar: BottomNavigationBar(
-        type: BottomNavigationBarType.fixed, // This is important for more than 3 items
+        type: BottomNavigationBarType.fixed,
         items: const <BottomNavigationBarItem>[
-          BottomNavigationBarItem(
-            icon: Icon(Icons.home),
-            label: 'Home',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.flight),
-            label: 'Book Flight',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.schedule),
-            label: 'Schedules',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.bookmark),
-            label: 'My Bookings',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.person),
-            label: 'Profile',
-          ),
+          BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
+          BottomNavigationBarItem(icon: Icon(Icons.flight), label: 'Book Flight'),
+          BottomNavigationBarItem(icon: Icon(Icons.schedule), label: 'Schedules'),
+          BottomNavigationBarItem(icon: Icon(Icons.bookmark), label: 'My Bookings'),
+          BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profile'),
         ],
         currentIndex: _selectedIndex,
         onTap: _onItemTapped,
