@@ -22,13 +22,14 @@ class DatabaseHelper {
 
     return await openDatabase(
       path,
-      version: 2,
+      version: 3, // Incremented version
       onCreate: _onCreate,
       onUpgrade: _onUpgrade,
     );
   }
 
   Future<void> _onCreate(Database db, int version) async {
+    // Create users table
     await db.execute('''
       CREATE TABLE users(
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -38,6 +39,7 @@ class DatabaseHelper {
       )
     ''');
 
+    // Create bookings table
     await db.execute('''
       CREATE TABLE bookings(
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -56,12 +58,41 @@ class DatabaseHelper {
         FOREIGN KEY (userId) REFERENCES users (id)
       )
     ''');
+
+    // Create new tables for flight data
+    await _createFlightTables(db);
   }
 
   Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
     if (oldVersion < 2) {
-      await db.execute('ALTER TABLE bookings ADD COLUMN status TEXT NOT NULL DEFAULT \'Confirmed\'');
+      await db.execute('ALTER TABLE bookings ADD COLUMN status TEXT NOT NULL DEFAULT ''Confirmed''');
     }
+    if (oldVersion < 3) {
+      await _createFlightTables(db);
+    }
+  }
+
+  Future<void> _createFlightTables(Database db) async {
+    await db.execute('''
+      CREATE TABLE daily_prices(
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        date TEXT NOT NULL,
+        destination TEXT NOT NULL,
+        price REAL,
+        UNIQUE(date, destination)
+      )
+    ''');
+    await db.execute('''
+      CREATE TABLE flights(
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        date TEXT NOT NULL,
+        destination TEXT NOT NULL,
+        departureTime TEXT NOT NULL,
+        arrivalTime TEXT NOT NULL,
+        duration TEXT NOT NULL,
+        price REAL NOT NULL
+      )
+    ''');
   }
 
   Future<int> insertUser(User user) async {
@@ -78,12 +109,7 @@ class DatabaseHelper {
     );
 
     if (maps.isNotEmpty) {
-      return User(
-        id: maps[0]['id'],
-        username: maps[0]['username'],
-        email: maps[0]['email'],
-        password: maps[0]['password'],
-      );
+      return User.fromMap(maps[0]);
     }
     return null;
   }
@@ -123,5 +149,60 @@ class DatabaseHelper {
       where: 'id = ?',
       whereArgs: [id],
     );
+  }
+
+  // --- NEW METHODS FOR FLIGHT DATA ---
+
+  Future<double?> getDailyPrice(DateTime date, String destination) async {
+    final db = await database;
+    final dateString = date.toIso8601String().split('T')[0];
+    final List<Map<String, dynamic>> maps = await db.query(
+      'daily_prices',
+      columns: ['price'],
+      where: 'date = ? AND destination = ?',
+      whereArgs: [dateString, destination],
+    );
+
+    if (maps.isNotEmpty) {
+      return maps[0]['price'] as double?;
+    }
+    return null;
+  }
+
+  Future<void> saveDailyPrice(DateTime date, String destination, double? price) async {
+    final db = await database;
+    final dateString = date.toIso8601String().split('T')[0];
+    await db.insert(
+      'daily_prices',
+      {'date': dateString, 'destination': destination, 'price': price},
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
+  }
+
+  Future<List<Map<String, dynamic>>> getFlights(DateTime date, String destination) async {
+    final db = await database;
+    final dateString = date.toIso8601String().split('T')[0];
+    return await db.query(
+      'flights',
+      where: 'date = ? AND destination = ?',
+      whereArgs: [dateString, destination],
+    );
+  }
+
+  Future<void> saveFlights(DateTime date, String destination, List<Map<String, dynamic>> flights) async {
+    final db = await database;
+    final dateString = date.toIso8601String().split('T')[0];
+    final batch = db.batch();
+    for (var flight in flights) {
+      batch.insert('flights', {
+        'date': dateString,
+        'destination': destination,
+        'departureTime': flight['departureTime'],
+        'arrivalTime': flight['arrivalTime'],
+        'duration': flight['duration'],
+        'price': flight['price'],
+      });
+    }
+    await batch.commit(noResult: true);
   }
 }

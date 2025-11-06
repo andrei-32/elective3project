@@ -195,6 +195,12 @@ class _BookingTabState extends State<BookingTab> {
         );
         return;
       }
+      if (_tripType == 'round trip' && _returnDate == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Please select a return date for a round trip.')),
+        );
+        return;
+      }
 
       Navigator.push(
         context,
@@ -203,6 +209,8 @@ class _BookingTabState extends State<BookingTab> {
             origin: 'Manila',
             destination: _selectedDestination!,
             departureDate: _departureDate,
+            tripType: _tripType,
+            returnDate: _returnDate,
           ),
         ),
       );

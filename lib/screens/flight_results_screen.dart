@@ -1,18 +1,23 @@
-
+import 'package:elective3project/screens/select_bundle_screen.dart';
 import 'package:flutter/material.dart';
 import 'dart:math';
 import 'package:intl/intl.dart';
+import 'package:elective3project/database/database_helper.dart';
 
 class FlightResultsScreen extends StatefulWidget {
   final String origin;
   final String destination;
   final DateTime departureDate;
+  final String tripType;
+  final DateTime? returnDate;
 
   const FlightResultsScreen({
     super.key,
     required this.origin,
     required this.destination,
     required this.departureDate,
+    required this.tripType,
+    this.returnDate,
   });
 
   @override
@@ -20,64 +25,187 @@ class FlightResultsScreen extends StatefulWidget {
 }
 
 class _FlightResultsScreenState extends State<FlightResultsScreen> {
-  late List<Map<String, dynamic>> _dates;
+  final dbHelper = DatabaseHelper();
+  List<Map<String, dynamic>> _dates = [];
   List<Map<String, dynamic>> _flights = [];
   DateTime? _selectedDate;
   final Random _random = Random();
+  bool _isCalendarLoading = true;
+  bool _isFlightLoading = false;
+
+  Map<String, dynamic>? _selectedDepartureFlight;
+  String _currentSelectionMode = 'departure'; // 'departure' or 'return'
 
   @override
   void initState() {
     super.initState();
-    _dates = _generateDates(widget.departureDate);
-    _selectedDate = widget.departureDate;
+    _loadInitialData();
+  }
 
-    final initialDateInfo = _dates.firstWhere(
-      (d) {
-        final date = d['date'] as DateTime;
-        return date.year == widget.departureDate.year &&
-               date.month == widget.departureDate.month &&
-               date.day == widget.departureDate.day;
-      },
-      orElse: () => {'price': null},
-    );
+  Future<void> _loadInitialData() async {
+    if (!mounted) return;
+    setState(() {
+      _isCalendarLoading = true;
+      _selectedDate = widget.departureDate;
+    });
 
-    if (initialDateInfo['price'] != null) {
-      _generateFlights(widget.departureDate);
+    await _updateCalendarAndFlightsForDate(widget.departureDate);
+
+    if (mounted) {
+      setState(() {
+        _isCalendarLoading = false;
+      });
     }
   }
 
-  List<Map<String, dynamic>> _generateDates(DateTime centerDate) {
+  Future<void> _updateCalendarAndFlightsForDate(DateTime centerDate) async {
+     if (!mounted) return;
+    setState(() {
+      _isCalendarLoading = true;
+    });
+
+    final loadedDates = await _loadCalendarDates(centerDate);
+    if (!mounted) return;
+    setState(() {
+      _dates = loadedDates;
+      _isCalendarLoading = false;
+    });
+
+    // Ensure the centerDate is selected visually
+    _selectedDate = centerDate; 
+
+    await _loadFlightsForDate(centerDate);
+  }
+
+
+  Future<List<Map<String, dynamic>>> _loadCalendarDates(DateTime centerDate) async {
     final List<Map<String, dynamic>> dates = [];
     for (int i = -5; i <= 5; i++) {
       final date = centerDate.add(Duration(days: i));
-      final bool isAvailable = _random.nextBool();
-      final double? price = isAvailable ? (1500 + _random.nextInt(2500)).toDouble() : null;
-      dates.add({'date': date, 'price': price});
+      
+      double? price = await dbHelper.getDailyPrice(date, widget.destination);
+
+      if (price == null) { // Not in DB
+        final bool isAvailable = _random.nextDouble() > 0.2; // 80% chance
+        price = isAvailable ? (1500 + _random.nextInt(2500)).toDouble() : -1.0; // -1.0 is sentinel for N/A
+        await dbHelper.saveDailyPrice(date, widget.destination, price);
+      }
+      
+      dates.add({'date': date, 'price': price == -1.0 ? null : price});
     }
     return dates;
   }
 
-  void _generateFlights(DateTime date) {
+  Future<void> _loadFlightsForDate(DateTime date) async {
+    if (!mounted) return;
     setState(() {
       _selectedDate = date;
-      _flights = List.generate(5, (index) {
-        final int startHour = _random.nextInt(20) + 4; // 4 AM to 11 PM
+      _isFlightLoading = true;
+      _flights = [];
+    });
+
+    // Find the price for the selected date from the already loaded _dates list
+    final dateInfo = _dates.firstWhere(
+      (d) => (d['date'] as DateTime).isAtSameMomentAs(date),
+      orElse: () => {'price': null}, // Default if date not found
+    );
+
+    // If price is null (N/A), don't load flights
+    if (dateInfo['price'] == null) {
+      if (mounted) {
+        setState(() {
+          _flights = [];
+          _isFlightLoading = false;
+        });
+      }
+      return;
+    }
+
+    List<Map<String, dynamic>> flightsForUi = [];
+    var flightsFromDb = await dbHelper.getFlights(date, widget.destination);
+
+    if (flightsFromDb.isNotEmpty) {
+      flightsForUi = flightsFromDb.map((dbFlight) {
+        try {
+          return {
+            'startTime': DateTime.parse(dbFlight['departureTime'] as String),
+            'endTime': DateTime.parse(dbFlight['arrivalTime'] as String),
+            'duration': int.parse(dbFlight['duration'] as String),
+            'price': dbFlight['price'] as double,
+          };
+        } catch (e) {
+           // Handle potential parsing errors if data is corrupted
+          print('Error parsing flight from DB: $e');
+          return null;
+        }
+      }).where((flight) => flight != null).cast<Map<String, dynamic>>().toList();
+    } else {
+      // Generate and save flights if not in DB
+      flightsForUi = List.generate(5, (index) {
+        final int startHour = _random.nextInt(20) + 4;
         final int startMinute = _random.nextInt(60);
         final DateTime startTime = DateTime(date.year, date.month, date.day, startHour, startMinute);
-
-        final int durationMinutes = _random.nextInt(60) + 60; // 60 to 120 minutes
+        final int durationMinutes = _random.nextInt(60) + 60;
         final DateTime endTime = startTime.add(Duration(minutes: durationMinutes));
-
         final double price = 1500 + _random.nextDouble() * 8000;
-
         return {
-          'startTime': startTime,
-          'endTime': endTime,
-          'duration': durationMinutes,
-          'price': price,
+          'startTime': startTime, 'endTime': endTime, 'duration': durationMinutes, 'price': price,
         };
       });
-    });
+
+      final List<Map<String, dynamic>> flightsToSave = flightsForUi.map((f) => {
+            'departureTime': f['startTime'].toIso8601String(),
+            'arrivalTime': f['endTime'].toIso8601String(),
+            'duration': f['duration'].toString(),
+            'price': f['price'],
+      }).toList();
+      await dbHelper.saveFlights(date, widget.destination, flightsToSave);
+    }
+
+    if (mounted) {
+      setState(() {
+        _flights = flightsForUi;
+        _isFlightLoading = false;
+      });
+    }
+  }
+
+  void _handleFlightTap(Map<String, dynamic> tappedFlight) {
+    if (_currentSelectionMode == 'departure') {
+      _selectedDepartureFlight = tappedFlight;
+      if (widget.tripType == 'round trip' && widget.returnDate != null) {
+        // Don't navigate yet. Switch to return selection mode.
+        setState(() {
+          _currentSelectionMode = 'return';
+        });
+        // Load calendar and flights for the return date
+        _updateCalendarAndFlightsForDate(widget.returnDate!);
+      } else {
+        // One-way trip, navigate directly
+        _navigateToSelectBundle(departure: tappedFlight);
+      }
+    } else { // Current mode is 'return'
+      // Navigate with both departure and return flights
+      _navigateToSelectBundle(departure: _selectedDepartureFlight!, returnF: tappedFlight);
+    }
+  }
+
+
+  void _navigateToSelectBundle({required Map<String, dynamic> departure, Map<String, dynamic>? returnF}) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => SelectBundleScreen(
+          departureFlight: departure,
+          returnFlight: returnF,
+          tripType: widget.tripType,
+          origin: widget.origin,
+          destination: widget.destination,
+          departureDate: widget.departureDate,
+          returnDate: widget.returnDate,
+        ),
+      ),
+    );
   }
 
   String _formatDuration(int totalMinutes) {
@@ -90,68 +218,60 @@ class _FlightResultsScreenState extends State<FlightResultsScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: const Color(0xFF000080), // Dark Blue
+        backgroundColor: const Color(0xFF000080),
         title: Row(
           children: [
             Image.asset(
               'assets/images/logo.png',
               height: 30,
               errorBuilder: (context, error, stackTrace) {
-                return const Icon(Icons.flight_takeoff);
+                return const Icon(Icons.flight_takeoff, color: Colors.white,);
               },
             ),
             const SizedBox(width: 8),
             const Text('FLYQUEST', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
           ],
         ),
+        iconTheme: const IconThemeData(color: Colors.white),
       ),
       body: Container(
         color: Colors.grey[200],
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Header
             Container(
               padding: const EdgeInsets.all(16.0),
               width: double.infinity,
               color: Colors.white,
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.center, // Centered the header content
+                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  const Text(
-                    'Select your departing flight',
-                    style: TextStyle(fontSize: 16, color: Colors.black54),
+                  Text(
+                    _currentSelectionMode == 'departure'
+                        ? 'Select your departing flight'
+                        : 'Select your return flight',
+                    style: const TextStyle(fontSize: 16, color: Colors.black54),
                   ),
                   const SizedBox(height: 8),
                   Row(
-                    mainAxisAlignment: MainAxisAlignment.center, // Center the row items
+                    mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Text(
                         widget.origin,
-                        style: const TextStyle(
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.black87,
-                        ),
+                        style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.black87),
                       ),
                       const SizedBox(width: 8),
-                      const Icon(Icons.airplanemode_active, color: Colors.black87, size: 24),
+                      Icon(Icons.airplanemode_active, color: Colors.black87, size: 24, semanticLabel: _currentSelectionMode == 'departure' ? 'Departing' : 'Returning'),
                       const SizedBox(width: 8),
                       Text(
                         widget.destination,
-                        style: const TextStyle(
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.black87,
-                        ),
+                        style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.black87),
                       ),
                     ],
                   ),
                 ],
               ),
             ),
-            
-            // Calendar
             const Padding(
               padding: EdgeInsets.fromLTRB(16.0, 16.0, 16.0, 8.0),
               child: Text(
@@ -161,79 +281,64 @@ class _FlightResultsScreenState extends State<FlightResultsScreen> {
             ),
             SizedBox(
               height: 90,
-              child: ListView.builder(
-                scrollDirection: Axis.horizontal,
-                itemCount: _dates.length,
-                itemBuilder: (context, index) {
-                  final dateInfo = _dates[index];
-                  final DateTime date = dateInfo['date'];
-                  final double? price = dateInfo['price'];
-                  final bool isSelected = _selectedDate != null &&
-                      _selectedDate!.day == date.day &&
-                      _selectedDate!.month == date.month &&
-                      _selectedDate!.year == date.year;
+              child: _isCalendarLoading
+                  ? const Center(child: CircularProgressIndicator())
+                  : ListView.builder(
+                      scrollDirection: Axis.horizontal,
+                      itemCount: _dates.length,
+                      itemBuilder: (context, index) {
+                        final dateInfo = _dates[index];
+                        final DateTime date = dateInfo['date'];
+                        final double? price = dateInfo['price'];
+                        final bool isSelected = _selectedDate != null && _selectedDate!.isAtSameMomentAs(date);
 
-                  return GestureDetector(
-                    onTap: () {
-                      if (price != null) {
-                        _generateFlights(date);
-                      } else {
-                        setState(() {
-                          _selectedDate = date;
-                          _flights = [];
-                        });
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('No flights available for this date.')),
+                        return GestureDetector(
+                          onTap: () => _loadFlightsForDate(date),
+                          child: Container(
+                            width: 80,
+                            margin: const EdgeInsets.symmetric(horizontal: 4.0, vertical: 4.0),
+                            decoration: BoxDecoration(
+                              color: isSelected ? Colors.blue.shade100 : Colors.white,
+                              borderRadius: BorderRadius.circular(12.0),
+                              border: Border.all(
+                                color: isSelected ? Colors.blue.shade800 : Colors.grey.shade300,
+                                width: 2,
+                              ),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.grey.withOpacity(0.2),
+                                  spreadRadius: 1,
+                                  blurRadius: 3,
+                                  offset: const Offset(0, 2),
+                                ),
+                              ],
+                            ),
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Text(
+                                  DateFormat('MMM d').format(date),
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    color: isSelected ? Colors.blue.shade900 : Colors.black87,
+                                  ),
+                                ),
+                                const SizedBox(height: 8),
+                                Text(
+                                  price != null ? '₱${NumberFormat('#,##0').format(price)}' : 'N/A',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: price != null ? Colors.green.shade800 : Colors.red.shade700,
+                                    fontWeight: price != null ? FontWeight.bold : FontWeight.normal,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
                         );
-                      }
-                    },
-                    child: Container(
-                      width: 80,
-                      margin: const EdgeInsets.symmetric(horizontal: 4.0, vertical: 4.0),
-                      decoration: BoxDecoration(
-                        color: isSelected ? Colors.blue.shade100 : Colors.white,
-                        borderRadius: BorderRadius.circular(12.0),
-                        border: Border.all(
-                          color: isSelected ? Colors.blue.shade800 : Colors.grey.shade300,
-                          width: 2,
-                        ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.grey.withOpacity(0.2),
-                            spreadRadius: 1,
-                            blurRadius: 3,
-                            offset: const Offset(0, 2),
-                          ),
-                        ],
-                      ),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Text(
-                            DateFormat('MMM d').format(date),
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              color: isSelected ? Colors.blue.shade900 : Colors.black87,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            price != null ? '₱${NumberFormat('#,##0').format(price)}' : 'N/A',
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: price != null ? Colors.green.shade800 : Colors.red.shade700,
-                              fontWeight: price != null ? FontWeight.bold : FontWeight.normal,
-                            ),
-                          ),
-                        ],
-                      ),
+                      },
                     ),
-                  );
-                },
-              ),
             ),
-
-            // Flights List
             const Padding(
               padding: EdgeInsets.all(16.0),
               child: Text(
@@ -242,92 +347,97 @@ class _FlightResultsScreenState extends State<FlightResultsScreen> {
               ),
             ),
             Expanded(
-              child: _flights.isEmpty
-                  ? Center(
-                      child: Text(
-                        _selectedDate == null
-                            ? 'Please select a date to see available flights.'
-                            : 'No flights available for this date.',
-                        style: const TextStyle(fontSize: 16, color: Colors.grey),
-                        textAlign: TextAlign.center,
-                      ),
-                    )
-                  : ListView.builder(
-                      padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                      itemCount: _flights.length,
-                      itemBuilder: (context, index) {
-                        final flight = _flights[index];
-                        return Card(
-                          elevation: 4.0,
-                          margin: const EdgeInsets.symmetric(vertical: 8.0),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12.0),
+              child: _isFlightLoading
+                  ? const Center(child: CircularProgressIndicator())
+                  : _flights.isEmpty
+                      ? const Center(
+                          child: Text(
+                            'No flights available for this date.',
+                            style: TextStyle(fontSize: 16, color: Colors.grey),
+                            textAlign: TextAlign.center,
                           ),
-                          child: Padding(
-                            padding: const EdgeInsets.all(16.0),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                        )
+                      : ListView.builder(
+                          padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                          itemCount: _flights.length,
+                          itemBuilder: (context, index) {
+                            final flight = _flights[index];
+                            final DateTime startTime = flight['startTime'];
+                            final DateTime endTime = flight['endTime'];
+                            final int duration = flight['duration'];
+                            final double price = flight['price'];
+                            
+                            return Card(
+                              elevation: 4.0,
+                              margin: const EdgeInsets.symmetric(vertical: 8.0),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12.0),
+                              ),
+                              child: InkWell(
+                                onTap: () => _handleFlightTap(flight),
+                                child: Padding(
+                                  padding: const EdgeInsets.all(16.0),
+                                  child: Row(
+                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                     children: [
-                                      // Top Row: Time and Duration
-                                      Row(
-                                        children: [
-                                          Text(
-                                            DateFormat.jm().format(flight['startTime']),
-                                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                                          ),
-                                          const SizedBox(width: 8),
-                                          Transform.rotate(
-                                            angle: 0.785398, // 45 degrees
-                                            child: const Icon(Icons.airplanemode_active, color: Colors.grey, size: 20),
-                                          ),
-                                          const SizedBox(width: 8),
-                                          Text(
-                                            DateFormat.jm().format(flight['endTime']),
-                                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                                          ),
-                                        ],
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            Row(
+                                              children: [
+                                                Text(
+                                                  DateFormat.jm().format(startTime),
+                                                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                                                ),
+                                                const SizedBox(width: 8),
+                                                Transform.rotate(
+                                                  angle: 0.785398, // 45 degrees
+                                                  child: const Icon(Icons.airplanemode_active, color: Colors.grey, size: 20),
+                                                ),
+                                                const SizedBox(width: 8),
+                                                Text(
+                                                  DateFormat.jm().format(endTime),
+                                                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                                                ),
+                                              ],
+                                            ),
+                                            const SizedBox(height: 8),
+                                            Row(
+                                              children: [
+                                                const Icon(Icons.flight_takeoff, color: Colors.grey, size: 20),
+                                                const SizedBox(width: 4),
+                                                Text(widget.origin, style: const TextStyle(color: Colors.grey)),
+                                                const SizedBox(width: 8),
+                                                const Icon(Icons.flight_land, color: Colors.grey, size: 20),
+                                                const SizedBox(width: 4),
+                                                Text(widget.destination, style: const TextStyle(color: Colors.grey)),
+                                              ],
+                                            ),
+                                          ],
+                                        ),
                                       ),
-                                      const SizedBox(height: 8),
-                                      // Bottom Row: Origin and Destination
-                                      Row(
+                                      Column(
+                                        crossAxisAlignment: CrossAxisAlignment.end,
                                         children: [
-                                          const Icon(Icons.flight_takeoff, color: Colors.grey, size: 20),
-                                          const SizedBox(width: 4),
-                                          Text(widget.origin, style: const TextStyle(color: Colors.grey)),
-                                          const SizedBox(width: 8),
-                                          const Icon(Icons.flight_land, color: Colors.grey, size: 20),
-                                          const SizedBox(width: 4),
-                                          Text(widget.destination, style: const TextStyle(color: Colors.grey)),
+                                          Text(
+                                            _formatDuration(duration),
+                                            style: const TextStyle(color: Colors.grey, fontSize: 12),
+                                          ),
+                                          const SizedBox(height: 8),
+                                          Text(
+                                            'PHP ${NumberFormat('#,##0.00').format(price)}',
+                                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Color(0xFF003366)),
+                                          ),
                                         ],
                                       ),
                                     ],
                                   ),
                                 ),
-                                // Right Side: Duration and Fare
-                                Column(
-                                  crossAxisAlignment: CrossAxisAlignment.end,
-                                  children: [
-                                    Text(
-                                      _formatDuration(flight['duration']),
-                                      style: const TextStyle(color: Colors.grey, fontSize: 12),
-                                    ),
-                                    const SizedBox(height: 8),
-                                    Text(
-                                      'PHP ${NumberFormat('#,##0.00').format(flight['price'])}',
-                                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Color(0xFF003366)),
-                                    ),
-                                  ],
-                                ),
-                              ],
-                            ),
-                          ),
-                        );
-                      },
-                    ),
+                              ),
+                            );
+                          },
+                        ),
             ),
           ],
         ),
