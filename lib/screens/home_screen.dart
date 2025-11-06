@@ -148,13 +148,10 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      final args = ModalRoute.of(context)!.settings.arguments;
-      if (args is int) {
-        _userId = args;
-        _loadBookings();
-      }
-    });
+    // TODO: This should be replaced by a proper user session/login system
+    // For now, we hardcode the user ID to 1 to match the one used in payment_screen.
+    _userId = 1; 
+    _loadBookings(); // Load bookings for the default user
   }
 
   Future<void> _loadBookings() async {
@@ -174,6 +171,10 @@ class _HomeScreenState extends State<HomeScreen> {
       _selectedIndex = index;
       _initialDestination = null; // Reset when manually changing tabs
     });
+    // If the 'My Bookings' tab is selected (index 3), refresh the bookings list.
+    if (index == 3) {
+      _loadBookings();
+    }
   }
 
   @override

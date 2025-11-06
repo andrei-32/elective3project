@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:elective3project/database/database_helper.dart';
 import 'package:flutter/material.dart';
 import 'package:elective3project/models/booking.dart';
@@ -56,6 +57,10 @@ class _FlightDetailsScreenState extends State<FlightDetailsScreen> {
   @override
   Widget build(BuildContext context) {
     final booking = ModalRoute.of(context)!.settings.arguments as Booking;
+    final departureDetails = json.decode(booking.departureFlightDetails);
+    final arrivalTime = departureDetails['arrivalTime'] ?? 'N/A';
+    final departureTime = departureDetails['departureTime'] ?? 'N/A';
+
     const gold = Color(0xFFFFD700);
 
     return Scaffold(
@@ -84,7 +89,7 @@ class _FlightDetailsScreenState extends State<FlightDetailsScreen> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text(booking.flight.destination, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+                    Text(booking.destination, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
                     Chip(
                       label: Text(booking.status),
                       backgroundColor: booking.status == 'Cancelled' ? Colors.red : gold,
@@ -92,14 +97,14 @@ class _FlightDetailsScreenState extends State<FlightDetailsScreen> {
                   ],
                 ),
                 const SizedBox(height: 16.0),
-                Text('Departure: ${booking.departureDate.toLocal().toString().split(' ')[0]} at ${booking.flight.departureTime}',
+                Text('Departure: ${booking.departureDate.toLocal().toString().split(' ')[0]} at $departureTime',
                     style: const TextStyle(fontSize: 16)),
-                Text('Arrival: ${booking.departureDate.toLocal().toString().split(' ')[0]} at ${booking.flight.arrivalTime}',
+                Text('Arrival: ${booking.departureDate.toLocal().toString().split(' ')[0]} at $arrivalTime',
                     style: const TextStyle(fontSize: 16)),
                 const SizedBox(height: 16.0),
-                Text('Passengers: ${booking.adults} Adults, ${booking.children} Children, ${booking.infants} Infants',
+                 Text('Passenger: ${booking.guestFirstName} ${booking.guestLastName}',
                     style: const TextStyle(fontSize: 16)),
-                Text('Class: ${booking.flightClass}', style: const TextStyle(fontSize: 16)),
+                Text('Bundle: ${booking.selectedBundle}', style: const TextStyle(fontSize: 16)),
                 Text('Trip Type: ${booking.tripType}', style: const TextStyle(fontSize: 16)),
                 if (booking.returnDate != null)
                   Text('Return Date: ${booking.returnDate!.toLocal().toString().split(' ')[0]}',

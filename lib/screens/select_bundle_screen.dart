@@ -1,4 +1,4 @@
-import 'package:elective3project/screens/guest_details_screen.dart';
+import 'package:elective3project/screens/review_flight_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
@@ -246,7 +246,7 @@ class _SelectBundleScreenState extends State<SelectBundleScreen> {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => GuestDetailsScreen(
+                      builder: (context) => ReviewFlightScreen(
                         departureFlight: widget.departureFlight,
                         returnFlight: widget.returnFlight,
                         selectedBundle: _selectedBundle,
@@ -255,6 +255,7 @@ class _SelectBundleScreenState extends State<SelectBundleScreen> {
                         destination: widget.destination,
                         departureDate: widget.departureDate,
                         returnDate: widget.returnDate,
+                        tripType: widget.tripType,
                       ),
                     ),
                   );

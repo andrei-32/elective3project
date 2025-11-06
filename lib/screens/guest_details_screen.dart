@@ -1,5 +1,6 @@
+
+import 'package:elective3project/screens/payment_screen.dart';
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 
 class GuestDetailsScreen extends StatefulWidget {
   final Map<String, dynamic> departureFlight;
@@ -8,9 +9,9 @@ class GuestDetailsScreen extends StatefulWidget {
   final double bundlePrice;
   final String origin;
   final String destination;
-    final DateTime departureDate;
+  final DateTime departureDate;
   final DateTime? returnDate;
-
+  final String tripType;
 
   const GuestDetailsScreen({
     Key? key,
@@ -22,7 +23,7 @@ class GuestDetailsScreen extends StatefulWidget {
     required this.destination,
     required this.departureDate,
     this.returnDate,
-
+    required this.tripType,
   }) : super(key: key);
 
   @override
@@ -31,61 +32,47 @@ class GuestDetailsScreen extends StatefulWidget {
 
 class _GuestDetailsScreenState extends State<GuestDetailsScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _nameController = TextEditingController();
-  final _contactController = TextEditingController();
-  final _addressController = TextEditingController();
+  String? _title;
+  final _firstNameController = TextEditingController();
+  final _lastNameController = TextEditingController();
+  final _dobController = TextEditingController();
+  final _nationalityController = TextEditingController();
+  final _contactNumberController = TextEditingController();
+  final _emailController = TextEditingController();
+
+  final _contactFirstNameController = TextEditingController();
+  final _contactLastNameController = TextEditingController();
+
+  bool _hasDeclaration = false;
+  bool _isPwd = false;
+  bool _agreedToPolicy = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _firstNameController.addListener(() {
+      _contactFirstNameController.text = _firstNameController.text;
+    });
+    _lastNameController.addListener(() {
+      _contactLastNameController.text = _lastNameController.text;
+    });
+  }
 
   @override
   void dispose() {
-    _nameController.dispose();
-    _contactController.dispose();
-    _addressController.dispose();
+    _firstNameController.dispose();
+    _lastNameController.dispose();
+    _dobController.dispose();
+    _nationalityController.dispose();
+    _contactNumberController.dispose();
+    _emailController.dispose();
+    _contactFirstNameController.dispose();
+    _contactLastNameController.dispose();
     super.dispose();
   }
 
-  Widget _buildFlightSummaryCard(String title, Map<String, dynamic> flight, DateTime date) {
-    final departureTime = flight['startTime'] ;
-    final arrivalTime = flight['endTime'];
-    final price = flight['price'] as double;
-
-    final totalPrice = price + widget.bundlePrice;
-
-    return Card(
-      margin: const EdgeInsets.symmetric(vertical: 4.0),
-      child: Padding(
-        padding: const EdgeInsets.all(12.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(title, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 4),
-            Text(DateFormat('MMMM d, y').format(date)),
-             const SizedBox(height: 8),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                 Text(
-                  '${DateFormat.jm().format(departureTime)} - ${DateFormat.jm().format(arrivalTime)}',
-                  style: const TextStyle(fontWeight: FontWeight.bold),
-                ),
-                Text('PHP ${price.toStringAsFixed(2)}', style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.blue)),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-
   @override
   Widget build(BuildContext context) {
-    double totalFlightPrice = widget.departureFlight['price'];
-    if (widget.returnFlight != null) {
-      totalFlightPrice += widget.returnFlight!['price'];
-    }
-    final double totalPrice = totalFlightPrice + widget.bundlePrice;
-
     return Scaffold(
       appBar: AppBar(title: const Text('Guest Details')),
       body: SingleChildScrollView(
@@ -96,55 +83,206 @@ class _GuestDetailsScreenState extends State<GuestDetailsScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text('Your Booking Summary', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-                const SizedBox(height: 12),
-                _buildFlightSummaryCard('Departure: ${widget.origin} to ${widget.destination}', widget.departureFlight, widget.departureDate),
-                if (widget.returnFlight != null)
-                  _buildFlightSummaryCard('Return: ${widget.destination} to ${widget.origin}', widget.returnFlight!, widget.returnDate!),
+                const Text(
+                  'Name',
+                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                ),
+                const Text(
+                  'Please make sure that you enter your name exactly as it is shown on your Valid ID',
+                ),
                 const SizedBox(height: 16),
-                Card(
-                  margin: const EdgeInsets.symmetric(vertical: 4.0),
-                  child: Padding(
-                    padding: const EdgeInsets.all(12.0),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        const Text('Bundle', style: TextStyle(fontWeight: FontWeight.bold)),
-                        Text(widget.selectedBundle, style: const TextStyle(fontWeight: FontWeight.bold)),
-                      ],
-                    ),
+                DropdownButtonFormField<String>(
+                  value: _title,
+                  decoration: const InputDecoration(
+                    labelText: 'Title',
+                    border: OutlineInputBorder(),
+                  ),
+                  items: ['Mr.', 'Ms.']
+                      .map((label) => DropdownMenuItem(
+                            child: Text(label),
+                            value: label,
+                          ))
+                      .toList(),
+                  onChanged: (value) {
+                    setState(() {
+                      _title = value;
+                    });
+                  },
+                  validator: (value) =>
+                      value == null ? 'Please select a title' : null,
+                ),
+                const SizedBox(height: 16),
+                TextFormField(
+                  controller: _firstNameController,
+                  decoration: const InputDecoration(
+                    labelText: 'First Name',
+                    hintText: 'Enter first name',
+                    border: OutlineInputBorder(),
+                  ),
+                  validator: (value) =>
+                      value == null || value.isEmpty ? 'Please enter your first name' : null,
+                ),
+                const SizedBox(height: 16),
+                TextFormField(
+                  controller: _lastNameController,
+                  decoration: const InputDecoration(
+                    labelText: 'Last Name',
+                    hintText: 'Enter last name',
+                    border: OutlineInputBorder(),
+                  ),
+                  validator: (value) =>
+                      value == null || value.isEmpty ? 'Please enter your last name' : null,
+                ),
+                const SizedBox(height: 16),
+                TextFormField(
+                  controller: _dobController,
+                  decoration: const InputDecoration(
+                    labelText: 'Date of Birth',
+                    hintText: 'Day Month Year',
+                    border: OutlineInputBorder(),
+                  ),
+                  onTap: () async {
+                    FocusScope.of(context).requestFocus(new FocusNode());
+                    final date = await showDatePicker(
+                      context: context,
+                      initialDate: DateTime.now(),
+                      firstDate: DateTime(1900),
+                      lastDate: DateTime.now(),
+                    );
+                    if (date != null) {
+                      _dobController.text = "${date.day} ${date.month} ${date.year}";
+                    }
+                  },
+                ),
+                const SizedBox(height: 4),
+                 const Text(
+                  'Adults should be at least 12 years old on date of travel',
+                  style: TextStyle(fontSize: 12, color: Colors.grey),
+                ),
+                const SizedBox(height: 16),
+                TextFormField(
+                  controller: _nationalityController,
+                  decoration: const InputDecoration(
+                    labelText: 'Nationality',
+                    border: OutlineInputBorder(),
+                  ),
+                   validator: (value) =>
+                      value == null || value.isEmpty ? 'Please enter your nationality' : null,
+                ),
+                const SizedBox(height: 16),
+                CheckboxListTile(
+                  title: const Text('I have a declaration/request'),
+                  value: _hasDeclaration,
+                  onChanged: (value) {
+                    setState(() {
+                      _hasDeclaration = value!;
+                    });
+                  },
+                  controlAffinity: ListTileControlAffinity.leading,
+                ),
+                CheckboxListTile(
+                  title: const Text('I am a Person with Disability'),
+                  value: _isPwd,
+                  onChanged: (value) {
+                    setState(() {
+                      _isPwd = value!;
+                    });
+                  },
+                  controlAffinity: ListTileControlAffinity.leading,
+                ),
+                const Divider(height: 32),
+                 const Text(
+                  'Contact Information',
+                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                ),
+                 const Text(
+                  'Let us know how we may reach you if there are changes or questions related to your booking and payment',
+                ),
+                const SizedBox(height: 16),
+                 TextFormField(
+                  controller: _contactFirstNameController,
+                  readOnly: true,
+                  decoration: const InputDecoration(
+                    labelText: 'First Name',
+                    border: OutlineInputBorder(),
+                     filled: true,
+                    fillColor: Colors.black12,
                   ),
                 ),
-                const Divider(height: 24),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    const Text('Total Price', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                    Text(
-                      'PHP ${totalPrice.toStringAsFixed(2)}',
-                      style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.blue),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 24),
-                const Text('Passenger Details', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
                 const SizedBox(height: 16),
-                TextFormField(
-                  controller: _nameController,
-                  decoration: const InputDecoration(labelText: 'Name', border: OutlineInputBorder()),
-                  validator: (value) => value == null || value.isEmpty ? 'Please enter your name' : null,
+                 TextFormField(
+                  controller: _contactLastNameController,
+                   readOnly: true,
+                  decoration: const InputDecoration(
+                    labelText: 'Last Name',
+                    border: OutlineInputBorder(),
+                    filled: true,
+                    fillColor: Colors.black12,
+                  ),
                 ),
                 const SizedBox(height: 16),
-                TextFormField(
-                  controller: _contactController,
-                  decoration: const InputDecoration(labelText: 'Contact Number', border: OutlineInputBorder()),
-                  validator: (value) => value == null || value.isEmpty ? 'Please enter your contact number' : null,
+                 TextFormField(
+                  controller: _contactNumberController,
+                  decoration: const InputDecoration(
+                    labelText: 'Contact Number',
+                    border: OutlineInputBorder(),
+                  ),
+                  keyboardType: TextInputType.phone,
+                   validator: (value) =>
+                      value == null || value.isEmpty ? 'Please enter your contact number' : null,
                 ),
                 const SizedBox(height: 16),
                 TextFormField(
-                  controller: _addressController,
-                  decoration: const InputDecoration(labelText: 'Address', border: OutlineInputBorder()),
-                  validator: (value) => value == null || value.isEmpty ? 'Please enter your address' : null,
+                  controller: _emailController,
+                  decoration: const InputDecoration(
+                    labelText: 'Email',
+                    border: OutlineInputBorder(),
+                  ),
+                   keyboardType: TextInputType.emailAddress,
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Please enter your email';
+                    }
+                    if (!RegExp(r"^[a-zA-Z0-9.a-zA-Z0-9.!#$%&'*+-/=?^_`{|}~]+@[a-zA-Z0-9]+\.[a-zA-Z]+").hasMatch(value)) {
+                      return 'Please enter a valid email';
+                    }
+                    return null;
+                  },
+                ),
+                 const SizedBox(height: 16),
+                FormField<bool>(
+                  builder: (state) {
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: <Widget>[
+                        CheckboxListTile(
+                          title: const Text(
+                              'I confirm that I have read, understood, and agree to the FlyQuest Privacy Policy. I Consent to the collection, use, processing and sharing of my personal information in accordance therewith'),
+                          value: _agreedToPolicy,
+                          onChanged: (value) {
+                            setState(() {
+                              _agreedToPolicy = value!;
+                              state.didChange(value);
+                            });
+                          },
+                          controlAffinity: ListTileControlAffinity.leading,
+                          subtitle: state.errorText == null
+                              ? null
+                              : Text(
+                                  state.errorText!,
+                                  style: TextStyle(color: Theme.of(context).colorScheme.error),
+                                ),
+                        ),
+                      ],
+                    );
+                  },
+                  validator: (value) {
+                    if (!_agreedToPolicy) {
+                      return 'You must agree to the Privacy Policy';
+                    } else {
+                      return null;
+                    }
+                  },
                 ),
               ],
             ),
@@ -152,30 +290,64 @@ class _GuestDetailsScreenState extends State<GuestDetailsScreen> {
         ),
       ),
       bottomNavigationBar: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: ElevatedButton(
-          onPressed: () {
-            if (_formKey.currentState!.validate()) {
-              showDialog(
-                context: context,
-                builder: (BuildContext context) {
-                  return AlertDialog(
-                    title: const Text('Booking Confirmed'),
-                    content: const Text('Your flight has been successfully booked!'),
-                    actions: <Widget>[
-                      TextButton(
-                        child: const Text('OK'),
-                        onPressed: () {
-                          Navigator.of(context).popUntil((route) => route.isFirst);
-                        },
+        padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+        child: Row(
+          children: [
+            Expanded(
+              child: OutlinedButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: const Text('Back'),
+                 style: OutlinedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                ),
+              ),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: ElevatedButton(
+                onPressed: () {
+                  if (_formKey.currentState!.validate()) {
+                    // Calculate the final total price
+                    double finalTotalPrice = 0.0;
+                    finalTotalPrice += (widget.departureFlight['price'] as num).toDouble();
+                    if (widget.returnFlight != null) {
+                      finalTotalPrice += (widget.returnFlight!['price'] as num).toDouble();
+                    }
+                    finalTotalPrice += widget.bundlePrice;
+                    
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => PaymentScreen(
+                           // Pass all the necessary data
+                          departureFlight: widget.departureFlight,
+                          returnFlight: widget.returnFlight,
+                          selectedBundle: widget.selectedBundle,
+                          bundlePrice: finalTotalPrice, // Use the calculated final total price
+                           origin: widget.origin,
+                          destination: widget.destination,
+                          departureDate: widget.departureDate,
+                          returnDate: widget.returnDate,
+                          tripType: widget.tripType,
+                          title: _title!,
+                          firstName: _firstNameController.text,
+                          lastName: _lastNameController.text,
+                          dob: _dobController.text,
+                          nationality: _nationalityController.text,
+                          contactNumber: _contactNumberController.text,
+                          email: _emailController.text,
+                        ),
                       ),
-                    ],
-                  );
+                    );
+                  }
                 },
-              );
-            }
-          },
-          child: const Text('Book Now'),
+                child: const Text('Continue'),
+                style: ElevatedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );
