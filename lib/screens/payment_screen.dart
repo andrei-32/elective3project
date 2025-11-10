@@ -15,6 +15,8 @@ class PaymentScreen extends StatefulWidget {
   final double bundlePrice;
   final String origin;
   final String destination;
+  final String? origin2;
+  final String? destination2;
   final DateTime departureDate;
   final DateTime? returnDate;
   final String tripType;
@@ -34,6 +36,8 @@ class PaymentScreen extends StatefulWidget {
     required this.bundlePrice,
     required this.origin,
     required this.destination,
+    this.origin2,
+    this.destination2,
     required this.departureDate,
     this.returnDate,
     required this.tripType,
@@ -138,6 +142,8 @@ class _PaymentScreenState extends State<PaymentScreen> {
           userId: 1, // Placeholder user ID
           origin: widget.origin,
           destination: widget.destination,
+          origin2: widget.origin2,
+          destination2: widget.destination2,
           departureDate: widget.departureDate,
           returnDate: widget.returnDate,
           tripType: widget.tripType,

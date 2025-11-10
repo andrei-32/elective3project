@@ -6,6 +6,8 @@ class Booking {
   final int userId;
   final String origin;
   final String destination;
+  final String? origin2;
+  final String? destination2;
   final DateTime departureDate;
   final DateTime? returnDate;
   final String tripType;
@@ -17,6 +19,7 @@ class Booking {
   final double totalPrice;
   final String paymentMethod;
   final String status;
+  final String? cancellationReason;
 
   Booking({
     this.id,
@@ -24,6 +27,8 @@ class Booking {
     required this.userId,
     required this.origin,
     required this.destination,
+    this.origin2,
+    this.destination2,
     required this.departureDate,
     this.returnDate,
     required this.tripType,
@@ -35,6 +40,7 @@ class Booking {
     required this.totalPrice,
     required this.paymentMethod,
     required this.status,
+    this.cancellationReason,
   });
 
   // Convert a Booking object into a Map object
@@ -45,6 +51,8 @@ class Booking {
       'userId': userId,
       'origin': origin,
       'destination': destination,
+      'origin2': origin2,
+      'destination2': destination2,
       'departureDate': departureDate.toIso8601String(),
       'returnDate': returnDate?.toIso8601String(),
       'tripType': tripType,
@@ -56,6 +64,7 @@ class Booking {
       'totalPrice': totalPrice,
       'paymentMethod': paymentMethod,
       'status': status,
+      'cancellationReason': cancellationReason,
     };
   }
 
@@ -67,6 +76,8 @@ class Booking {
       userId: map['userId'],
       origin: map['origin'],
       destination: map['destination'],
+      origin2: map['origin2'],
+      destination2: map['destination2'],
       departureDate: DateTime.parse(map['departureDate']),
       returnDate: map['returnDate'] != null ? DateTime.parse(map['returnDate']) : null,
       tripType: map['tripType'],
@@ -78,6 +89,7 @@ class Booking {
       totalPrice: map['totalPrice'],
       paymentMethod: map['paymentMethod'],
       status: map['status'],
+      cancellationReason: map['cancellationReason'],
     );
   }
 

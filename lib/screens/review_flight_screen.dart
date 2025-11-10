@@ -9,6 +9,8 @@ class ReviewFlightScreen extends StatelessWidget {
   final double bundlePrice;
   final String origin;
   final String destination;
+  final String? origin2;
+  final String? destination2;
   final String tripType;
   final DateTime departureDate;
   final DateTime? returnDate;
@@ -21,12 +23,16 @@ class ReviewFlightScreen extends StatelessWidget {
     required this.bundlePrice,
     required this.origin,
     required this.destination,
+    this.origin2,
+    this.destination2,
     required this.tripType,
     required this.departureDate,
     this.returnDate,
   }) : super(key: key);
 
   Widget _buildFlightCard(BuildContext context, String title, Map<String, dynamic> flight, DateTime date, String flightOrigin, String flightDestination) {
+    final currencyFormat = NumberFormat('#,##0.00', 'en_US');
+    
     return Card(
       margin: const EdgeInsets.symmetric(vertical: 8.0),
       child: Padding(
@@ -34,7 +40,7 @@ class ReviewFlightScreen extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(title, style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
+            Text(title, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
             const SizedBox(height: 8),
             Text(
               DateFormat('MMMM d, y').format(date),
@@ -44,9 +50,9 @@ class ReviewFlightScreen extends StatelessWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(flightOrigin, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+                Text(flightOrigin, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                 const Icon(Icons.flight, color: Colors.blue),
-                Text(flightDestination, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+                Text(flightDestination, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
               ],
             ),
             const SizedBox(height: 8),
@@ -62,7 +68,7 @@ class ReviewFlightScreen extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                     const Text('Flight Price:'),
-                    Text('PHP ${flight['price'].toStringAsFixed(2)}', style: const TextStyle(fontWeight: FontWeight.bold)),
+                    Text('PHP ${currencyFormat.format(flight['price'])}', style: const TextStyle(fontWeight: FontWeight.bold)),
                 ],
             ),
           ],
@@ -72,6 +78,8 @@ class ReviewFlightScreen extends StatelessWidget {
   }
 
   Widget _buildBundleCard(BuildContext context) {
+    final currencyFormat = NumberFormat('#,##0', 'en_US');
+
     return Card(
       margin: const EdgeInsets.symmetric(vertical: 8.0),
       child: Padding(
@@ -79,14 +87,14 @@ class ReviewFlightScreen extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Bundle for all flights', style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
+            Text('Bundle for all flights', style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold, fontSize: 18)),
             const Divider(height: 24),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(selectedBundle, style: const TextStyle(fontSize: 16)),
                 if (bundlePrice > 0)
-                  Text('+PHP ${bundlePrice.toStringAsFixed(0)}/guest', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.blue)),
+                  Text('+PHP ${currencyFormat.format(bundlePrice)}/guest', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.blue)),
                 if (bundlePrice == 0)
                   const Text('Included', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
               ],
@@ -99,12 +107,14 @@ class ReviewFlightScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final currencyFormat = NumberFormat('#,##0.00', 'en_US');
     double totalFlightPrice = departureFlight['price'];
     if (returnFlight != null) {
       totalFlightPrice += returnFlight!['price'];
     }
     final double totalPrice = totalFlightPrice + bundlePrice;
 
+    final bool isMultiCity = tripType == 'multi city';
 
     return Scaffold(
       appBar: AppBar(
@@ -115,9 +125,16 @@ class ReviewFlightScreen extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _buildFlightCard(context, 'Your departing flight', departureFlight, departureDate, origin, destination),
+            _buildFlightCard(context, isMultiCity ? 'FLIGHT 1' : 'Your departing flight', departureFlight, departureDate, origin, destination),
             if (returnFlight != null)
-              _buildFlightCard(context, 'Your returning flight', returnFlight!, returnDate!, destination, origin),
+              _buildFlightCard(
+                context, 
+                isMultiCity ? 'FLIGHT 2' : 'Your returning flight', 
+                returnFlight!, 
+                returnDate!, 
+                isMultiCity ? origin2! : destination, 
+                isMultiCity ? destination2! : origin
+              ),
             const SizedBox(height: 16),
             _buildBundleCard(context),
              const SizedBox(height: 24),
@@ -127,10 +144,10 @@ class ReviewFlightScreen extends StatelessWidget {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text('Total Price', style: Theme.of(context).textTheme.headlineSmall),
-                    Text('PHP ${totalPrice.toStringAsFixed(2)}', style: Theme.of(context).textTheme.headlineSmall?.copyWith(color: Colors.blue, fontWeight: FontWeight.bold)),
+                    Text('Total Price', style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
+                    Text('PHP ${currencyFormat.format(totalPrice)}', style: Theme.of(context).textTheme.titleLarge?.copyWith(color: Colors.blue, fontWeight: FontWeight.bold)),
                   ],
-                ),
+                ),  
               ),
             ),
           ],
@@ -144,6 +161,10 @@ class ReviewFlightScreen extends StatelessWidget {
               child: OutlinedButton(
                 onPressed: () => Navigator.of(context).pop(),
                 child: const Text('Back'),
+                style: OutlinedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  textStyle: const TextStyle(fontSize: 16),
+                ),
               ),
             ),
             const SizedBox(width: 16),
@@ -160,6 +181,8 @@ class ReviewFlightScreen extends StatelessWidget {
                         bundlePrice: bundlePrice,
                         origin: origin,
                         destination: destination,
+                        origin2: origin2,
+                        destination2: destination2,
                         departureDate: departureDate,
                         returnDate: returnDate,
                         tripType: tripType,
@@ -168,6 +191,10 @@ class ReviewFlightScreen extends StatelessWidget {
                   );
                 },
                 child: const Text('Continue'),
+                style: ElevatedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  textStyle: const TextStyle(fontSize: 16),
+                ),
               ),
             ),
           ],

@@ -1,6 +1,7 @@
 
 import 'package:elective3project/screens/payment_screen.dart';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 
 class GuestDetailsScreen extends StatefulWidget {
   final Map<String, dynamic> departureFlight;
@@ -9,6 +10,8 @@ class GuestDetailsScreen extends StatefulWidget {
   final double bundlePrice;
   final String origin;
   final String destination;
+  final String? origin2;
+  final String? destination2;
   final DateTime departureDate;
   final DateTime? returnDate;
   final String tripType;
@@ -21,6 +24,8 @@ class GuestDetailsScreen extends StatefulWidget {
     required this.bundlePrice,
     required this.origin,
     required this.destination,
+    this.origin2,
+    this.destination2,
     required this.departureDate,
     this.returnDate,
     required this.tripType,
@@ -36,6 +41,7 @@ class _GuestDetailsScreenState extends State<GuestDetailsScreen> {
   final _firstNameController = TextEditingController();
   final _lastNameController = TextEditingController();
   final _dobController = TextEditingController();
+  DateTime? _selectedDob;
   final _nationalityController = TextEditingController();
   final _contactNumberController = TextEditingController();
   final _emailController = TextEditingController();
@@ -69,6 +75,20 @@ class _GuestDetailsScreenState extends State<GuestDetailsScreen> {
     _contactFirstNameController.dispose();
     _contactLastNameController.dispose();
     super.dispose();
+  }
+
+  String? _validateDob(String? value) {
+    if (value == null || value.isEmpty) {
+      return 'Please enter your date of birth';
+    }
+    if (_selectedDob != null) {
+      final today = DateTime.now();
+      final twelveYearsAgo = DateTime(today.year - 12, today.month, today.day);
+      if (_selectedDob!.isAfter(twelveYearsAgo)) {
+        return 'Guest must be at least 12 years old';
+      }
+    }
+    return null;
   }
 
   @override
@@ -141,6 +161,7 @@ class _GuestDetailsScreenState extends State<GuestDetailsScreen> {
                     hintText: 'Day Month Year',
                     border: OutlineInputBorder(),
                   ),
+                  readOnly: true,
                   onTap: () async {
                     FocusScope.of(context).requestFocus(new FocusNode());
                     final date = await showDatePicker(
@@ -150,9 +171,13 @@ class _GuestDetailsScreenState extends State<GuestDetailsScreen> {
                       lastDate: DateTime.now(),
                     );
                     if (date != null) {
-                      _dobController.text = "${date.day} ${date.month} ${date.year}";
+                      setState(() {
+                        _selectedDob = date;
+                        _dobController.text = DateFormat('MMMM d, y').format(date);
+                      });
                     }
                   },
+                  validator: _validateDob,
                 ),
                 const SizedBox(height: 4),
                  const Text(
@@ -290,15 +315,16 @@ class _GuestDetailsScreenState extends State<GuestDetailsScreen> {
         ),
       ),
       bottomNavigationBar: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+        padding: const EdgeInsets.all(16.0),
         child: Row(
           children: [
             Expanded(
               child: OutlinedButton(
                 onPressed: () => Navigator.of(context).pop(),
                 child: const Text('Back'),
-                 style: OutlinedButton.styleFrom(
+                style: OutlinedButton.styleFrom(
                   padding: const EdgeInsets.symmetric(vertical: 16),
+                  textStyle: const TextStyle(fontSize: 16),
                 ),
               ),
             ),
@@ -326,6 +352,8 @@ class _GuestDetailsScreenState extends State<GuestDetailsScreen> {
                           bundlePrice: finalTotalPrice, // Use the calculated final total price
                            origin: widget.origin,
                           destination: widget.destination,
+                          origin2: widget.origin2,
+                          destination2: widget.destination2,
                           departureDate: widget.departureDate,
                           returnDate: widget.returnDate,
                           tripType: widget.tripType,
@@ -344,6 +372,7 @@ class _GuestDetailsScreenState extends State<GuestDetailsScreen> {
                 child: const Text('Continue'),
                 style: ElevatedButton.styleFrom(
                   padding: const EdgeInsets.symmetric(vertical: 16),
+                  textStyle: const TextStyle(fontSize: 16),
                 ),
               ),
             ),

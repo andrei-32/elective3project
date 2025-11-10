@@ -10,7 +10,7 @@ class DatabaseHelper {
 
   static Database? _database;
   static const String _dbName = 'flight_booking.db';
-  static const int _dbVersion = 4; // <-- Incremented version
+  static const int _dbVersion = 6; // <-- Incremented version
 
   Future<Database> get database async {
     if (_database != null) return _database!;
@@ -32,21 +32,27 @@ class DatabaseHelper {
 
   Future<void> _onCreate(Database db, int version) async {
     await _createUsersTable(db);
-    await _createBookingsTableV4(db);
+    await _createBookingsTable(db);
     await _createFlightTables(db);
   }
 
   Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
     if (oldVersion < 2) {
-       await db.execute('ALTER TABLE bookings ADD COLUMN status TEXT NOT NULL DEFAULT ''Confirmed''');
+       await db.execute('ALTER TABLE bookings ADD COLUMN status TEXT NOT NULL DEFAULT \'\'Confirmed\'\'');
     }
     if (oldVersion < 3) {
       await _createFlightTables(db);
     }
      if (oldVersion < 4) {
-      // Drop the old bookings table and create the new one
       await db.execute('DROP TABLE IF EXISTS bookings');
-      await _createBookingsTableV4(db);
+      await _createBookingsTable(db);
+    }
+    if (oldVersion < 5) {
+      await db.execute('ALTER TABLE bookings ADD COLUMN origin2 TEXT');
+      await db.execute('ALTER TABLE bookings ADD COLUMN destination2 TEXT');
+    }
+    if (oldVersion < 6) {
+      await db.execute('ALTER TABLE bookings ADD COLUMN cancellationReason TEXT');
     }
   }
 
@@ -61,7 +67,7 @@ class DatabaseHelper {
     ''');
   }
 
-  Future<void> _createBookingsTableV4(Database db) async {
+  Future<void> _createBookingsTable(Database db) async {
     await db.execute('''
       CREATE TABLE bookings(
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -69,6 +75,8 @@ class DatabaseHelper {
         userId INTEGER NOT NULL,
         origin TEXT NOT NULL,
         destination TEXT NOT NULL,
+        origin2 TEXT,
+        destination2 TEXT,
         departureDate TEXT NOT NULL,
         returnDate TEXT,
         tripType TEXT NOT NULL,
@@ -80,6 +88,7 @@ class DatabaseHelper {
         totalPrice REAL NOT NULL,
         paymentMethod TEXT NOT NULL,
         status TEXT NOT NULL, -- e.g., 'Confirmed', 'Cancelled'
+        cancellationReason TEXT, -- New column
         FOREIGN KEY (userId) REFERENCES users (id)
       )
     ''');
@@ -128,7 +137,7 @@ class DatabaseHelper {
     return null;
   }
 
-  // --- Booking Methods (Updated for V4) ---
+  // --- Booking Methods ---
   Future<int> insertBooking(Booking booking) async {
     final db = await database;
     return await db.insert('bookings', booking.toMap());
@@ -162,6 +171,16 @@ class DatabaseHelper {
     await db.update(
       'bookings',
       {'status': status},
+      where: 'id = ?',
+      whereArgs: [id],
+    );
+  }
+
+  Future<void> cancelBooking(int id, String reason) async {
+    final db = await database;
+    await db.update(
+      'bookings',
+      {'status': 'Cancelled', 'cancellationReason': reason},
       where: 'id = ?',
       whereArgs: [id],
     );

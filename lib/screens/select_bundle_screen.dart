@@ -7,6 +7,8 @@ class SelectBundleScreen extends StatefulWidget {
   final Map<String, dynamic>? returnFlight;
   final String origin;
   final String destination;
+  final String? origin2;
+  final String? destination2;
   final String tripType;
   final DateTime departureDate;
   final DateTime? returnDate;
@@ -17,6 +19,8 @@ class SelectBundleScreen extends StatefulWidget {
     this.returnFlight,
     required this.origin,
     required this.destination,
+    this.origin2,
+    this.destination2,
     required this.tripType,
     required this.departureDate,
     this.returnDate,
@@ -177,6 +181,8 @@ class _SelectBundleScreenState extends State<SelectBundleScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final bool isMultiCity = widget.tripType == 'multi city';
+
     return Scaffold(
       appBar: AppBar(title: const Text('Select a Bundle')),
       body: SingleChildScrollView(
@@ -187,9 +193,9 @@ class _SelectBundleScreenState extends State<SelectBundleScreen> {
             children: [
               const Text('Your Selected Flights', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
               const SizedBox(height: 8),
-              _buildFlightSummaryCard('Departure', widget.departureFlight, widget.departureDate),
+              _buildFlightSummaryCard(isMultiCity ? 'Flight 1 Departure' : 'Departure', widget.departureFlight, widget.departureDate),
               if (widget.returnFlight != null)
-                _buildFlightSummaryCard('Return', widget.returnFlight!, widget.returnDate!),
+                _buildFlightSummaryCard(isMultiCity ? 'Flight 2 Departure' : 'Return', widget.returnFlight!, widget.returnDate!),
               const SizedBox(height: 24),
               const Text('Select a bundle for all flights', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
               const SizedBox(height: 16),
@@ -237,6 +243,10 @@ class _SelectBundleScreenState extends State<SelectBundleScreen> {
               child: OutlinedButton(
                 onPressed: () => Navigator.of(context).pop(),
                 child: const Text('Back'),
+                style: OutlinedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  textStyle: const TextStyle(fontSize: 16),
+                ),
               ),
             ),
             const SizedBox(width: 16),
@@ -253,6 +263,8 @@ class _SelectBundleScreenState extends State<SelectBundleScreen> {
                         bundlePrice: _bundlePrice,
                         origin: widget.origin,
                         destination: widget.destination,
+                        origin2: widget.origin2,
+                        destination2: widget.destination2,
                         departureDate: widget.departureDate,
                         returnDate: widget.returnDate,
                         tripType: widget.tripType,
@@ -261,6 +273,10 @@ class _SelectBundleScreenState extends State<SelectBundleScreen> {
                   );
                 },
                 child: const Text('Continue'),
+                style: ElevatedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  textStyle: const TextStyle(fontSize: 16),
+                ),
               ),
             ),
           ],
