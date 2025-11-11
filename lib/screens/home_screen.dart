@@ -4,6 +4,7 @@ import 'package:elective3project/widgets/booking_tab.dart';
 import 'package:elective3project/widgets/schedules_tab.dart';
 import 'package:elective3project/widgets/booked_flights_tab.dart';
 import 'package:elective3project/models/booking.dart';
+import 'package:elective3project/screens/profile_view.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -143,7 +144,7 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
       );
 
-  final Widget _profileTab = const Center(child: Text('Profile'));
+  final Widget _profileTab = const ProfileView();
 
   @override
   void initState() {
