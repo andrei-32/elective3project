@@ -1,12 +1,18 @@
+import 'package:flutter/material.dart';
+import 'package:elective3project/services/storage_service.dart';
 import 'package:elective3project/screens/admin_home_screen.dart';
 import 'package:elective3project/screens/flight_details_screen.dart';
-import 'package:flutter/material.dart';
 import 'screens/login_screen.dart';
 import 'screens/registration_screen.dart';
 import 'screens/home_screen.dart';
-import 'screens/splash_screen.dart'; // Import the new splash screen
+import 'screens/splash_screen.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  // Initialize storage service (works for both web and mobile)
+  await StorageService.init();
+
   runApp(const MainApp());
 }
 
@@ -15,6 +21,7 @@ class MainApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Your existing theme and routes...
     const navyBlue = Color(0xFF000080);
     const gold = Color(0xFFFFD700);
     const white = Colors.white;
@@ -46,9 +53,7 @@ class MainApp extends StatelessWidget {
           ),
         ),
         inputDecorationTheme: InputDecorationTheme(
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(8.0),
-          ),
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(8.0)),
           filled: true,
           fillColor: white,
         ),
@@ -58,10 +63,9 @@ class MainApp extends StatelessWidget {
           unselectedItemColor: white,
         ),
       ),
-      // Set the splash screen as the initial route
       initialRoute: '/',
       routes: {
-        '/': (context) => const SplashScreen(), // The app will start here
+        '/': (context) => const SplashScreen(),
         '/login': (context) => const LoginScreen(),
         '/registration': (context) => const RegistrationScreen(),
         '/home': (context) => const HomeScreen(),
