@@ -6,7 +6,7 @@ import 'package:intl/intl.dart';
 class BookingConfirmationScreen extends StatelessWidget {
   final Booking booking;
 
-  const BookingConfirmationScreen({Key? key, required this.booking}) : super(key: key);
+  const BookingConfirmationScreen({super.key, required this.booking});
 
   @override
   Widget build(BuildContext context) {

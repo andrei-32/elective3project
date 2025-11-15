@@ -20,7 +20,7 @@ class _BookingTabState extends State<BookingTab> {
   int _selectedTripTypeIndex = 0; // 0: One Way, 1: Round Trip, 2: Multi-city
 
   // Controllers for Flight 1
-  String _origin1 = 'Manila';
+  final String _origin1 = 'Manila';
   String? _destination1;
   DateTime _departureDate1 = DateTime.now();
 
@@ -205,7 +205,7 @@ class _BookingTabState extends State<BookingTab> {
     final tripType = ['one way', 'round trip', 'multi city'][_selectedTripTypeIndex];
 
     if (tripType == 'multi city') {
-      if (_destination1 == null || _origin2 == null || _destination2 == null || _departureDate2 == null) {
+      if (_destination1 == null || _destination2 == null || _departureDate2 == null) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Please fill all fields for multi-city flights.')),
         );
@@ -340,7 +340,7 @@ class _BookingTabState extends State<BookingTab> {
                 PassengerCounter(label: 'Infants', count: _infants, onChanged: (count) => setState(() => _infants = count >= 0 ? count : 0)),
                 const SizedBox(height: 24.0),
                 DropdownButtonFormField<String>(
-                  value: _flightClass,
+                  initialValue: _flightClass,
                   decoration: const InputDecoration(labelText: 'Class', prefixIcon: Icon(Icons.airline_seat_recline_normal), border: OutlineInputBorder()),
                   items: _flightClasses.map((fClass) => DropdownMenuItem(value: fClass, child: Text(fClass))).toList(),
                   onChanged: (value) => setState(() => _flightClass = value!),

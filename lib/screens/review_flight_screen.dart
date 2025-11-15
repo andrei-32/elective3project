@@ -16,7 +16,7 @@ class ReviewFlightScreen extends StatelessWidget {
   final DateTime? returnDate;
 
   const ReviewFlightScreen({
-    Key? key,
+    super.key,
     required this.departureFlight,
     this.returnFlight,
     required this.selectedBundle,
@@ -28,7 +28,7 @@ class ReviewFlightScreen extends StatelessWidget {
     required this.tripType,
     required this.departureDate,
     this.returnDate,
-  }) : super(key: key);
+  });
 
   Widget _buildFlightCard(BuildContext context, String title, Map<String, dynamic> flight, DateTime date, String flightOrigin, String flightDestination) {
     final currencyFormat = NumberFormat('#,##0.00', 'en_US');
@@ -96,7 +96,7 @@ class ReviewFlightScreen extends StatelessWidget {
                 if (bundlePrice > 0)
                   Text('+PHP ${currencyFormat.format(bundlePrice)}/guest', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.blue)),
                 if (bundlePrice == 0)
-                  const Text('Included', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                  const Text('Included', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
               ],
             ),
           ],
@@ -160,11 +160,11 @@ class ReviewFlightScreen extends StatelessWidget {
             Expanded(
               child: OutlinedButton(
                 onPressed: () => Navigator.of(context).pop(),
-                child: const Text('Back'),
                 style: OutlinedButton.styleFrom(
                   padding: const EdgeInsets.symmetric(vertical: 16),
                   textStyle: const TextStyle(fontSize: 16),
                 ),
+                child: const Text('Back'),
               ),
             ),
             const SizedBox(width: 16),
@@ -190,11 +190,11 @@ class ReviewFlightScreen extends StatelessWidget {
                     ),
                   );
                 },
-                child: const Text('Continue'),
                 style: ElevatedButton.styleFrom(
                   padding: const EdgeInsets.symmetric(vertical: 16),
                   textStyle: const TextStyle(fontSize: 16),
                 ),
+                child: const Text('Continue'),
               ),
             ),
           ],

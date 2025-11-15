@@ -14,7 +14,7 @@ class SelectBundleScreen extends StatefulWidget {
   final DateTime? returnDate;
 
   const SelectBundleScreen({
-    Key? key,
+    super.key,
     required this.departureFlight,
     this.returnFlight,
     required this.origin,
@@ -24,7 +24,7 @@ class SelectBundleScreen extends StatefulWidget {
     required this.tripType,
     required this.departureDate,
     this.returnDate,
-  }) : super(key: key);
+  });
 
   @override
   _SelectBundleScreenState createState() => _SelectBundleScreenState();
@@ -242,11 +242,11 @@ class _SelectBundleScreenState extends State<SelectBundleScreen> {
             Expanded(
               child: OutlinedButton(
                 onPressed: () => Navigator.of(context).pop(),
-                child: const Text('Back'),
                 style: OutlinedButton.styleFrom(
                   padding: const EdgeInsets.symmetric(vertical: 16),
                   textStyle: const TextStyle(fontSize: 16),
                 ),
+                child: const Text('Back'),
               ),
             ),
             const SizedBox(width: 16),
@@ -272,11 +272,11 @@ class _SelectBundleScreenState extends State<SelectBundleScreen> {
                     ),
                   );
                 },
-                child: const Text('Continue'),
                 style: ElevatedButton.styleFrom(
                   padding: const EdgeInsets.symmetric(vertical: 16),
                   textStyle: const TextStyle(fontSize: 16),
                 ),
+                child: const Text('Continue'),
               ),
             ),
           ],

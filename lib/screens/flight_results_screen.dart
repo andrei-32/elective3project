@@ -100,11 +100,6 @@ class _FlightResultsScreenState extends State<FlightResultsScreen> {
     for (int i = -5; i <= 5; i++) {
       final date = centerDate.add(Duration(days: i));
       double? price = await dbHelper.getDailyPrice(date, dest);
-      if (price == null) {
-        final bool isAvailable = _random.nextDouble() > 0.2; 
-        price = isAvailable ? (1500 + _random.nextInt(2500)).toDouble() : -1.0;
-        await dbHelper.saveDailyPrice(date, dest, price);
-      }
       dates.add({'date': date, 'price': price == -1.0 ? null : price});
     }
     return dates;

@@ -17,7 +17,7 @@ class GuestDetailsScreen extends StatefulWidget {
   final String tripType;
 
   const GuestDetailsScreen({
-    Key? key,
+    super.key,
     required this.departureFlight,
     this.returnFlight,
     required this.selectedBundle,
@@ -29,7 +29,7 @@ class GuestDetailsScreen extends StatefulWidget {
     required this.departureDate,
     this.returnDate,
     required this.tripType,
-  }) : super(key: key);
+  });
 
   @override
   _GuestDetailsScreenState createState() => _GuestDetailsScreenState();
@@ -112,15 +112,15 @@ class _GuestDetailsScreenState extends State<GuestDetailsScreen> {
                 ),
                 const SizedBox(height: 16),
                 DropdownButtonFormField<String>(
-                  value: _title,
+                  initialValue: _title,
                   decoration: const InputDecoration(
                     labelText: 'Title',
                     border: OutlineInputBorder(),
                   ),
                   items: ['Mr.', 'Ms.']
                       .map((label) => DropdownMenuItem(
-                            child: Text(label),
                             value: label,
+                            child: Text(label),
                           ))
                       .toList(),
                   onChanged: (value) {
@@ -163,7 +163,7 @@ class _GuestDetailsScreenState extends State<GuestDetailsScreen> {
                   ),
                   readOnly: true,
                   onTap: () async {
-                    FocusScope.of(context).requestFocus(new FocusNode());
+                    FocusScope.of(context).requestFocus(FocusNode());
                     final date = await showDatePicker(
                       context: context,
                       initialDate: DateTime.now(),
@@ -321,11 +321,11 @@ class _GuestDetailsScreenState extends State<GuestDetailsScreen> {
             Expanded(
               child: OutlinedButton(
                 onPressed: () => Navigator.of(context).pop(),
-                child: const Text('Back'),
                 style: OutlinedButton.styleFrom(
                   padding: const EdgeInsets.symmetric(vertical: 16),
                   textStyle: const TextStyle(fontSize: 16),
                 ),
+                child: const Text('Back'),
               ),
             ),
             const SizedBox(width: 16),
@@ -369,11 +369,11 @@ class _GuestDetailsScreenState extends State<GuestDetailsScreen> {
                     );
                   }
                 },
-                child: const Text('Continue'),
                 style: ElevatedButton.styleFrom(
                   padding: const EdgeInsets.symmetric(vertical: 16),
                   textStyle: const TextStyle(fontSize: 16),
                 ),
+                child: const Text('Continue'),
               ),
             ),
           ],

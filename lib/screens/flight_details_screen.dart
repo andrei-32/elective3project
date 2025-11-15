@@ -53,7 +53,7 @@ class _FlightDetailsScreenState extends State<FlightDetailsScreen> {
                               });
                             },
                           );
-                        }).toList(),
+                        }),
                         if (selectedReason == 'Others (please specify)')
                           Padding(
                             padding: const EdgeInsets.symmetric(horizontal: 16.0),

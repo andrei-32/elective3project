@@ -1,10 +1,10 @@
 import 'package:elective3project/database/database_helper.dart';
+import 'package:elective3project/widgets/summary_flights_tab.dart';
 import 'package:flutter/material.dart';
 import 'package:elective3project/widgets/booking_tab.dart';
 import 'package:elective3project/widgets/schedules_tab.dart';
 import 'package:elective3project/widgets/booked_flights_tab.dart';
 import 'package:elective3project/models/booking.dart';
-import 'package:elective3project/screens/profile_view.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -144,7 +144,7 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
       );
 
-  final Widget _profileTab = const ProfileView();
+  final Widget _profileTab = const Center(child: Text('Profile2'));
 
   @override
   void initState() {
@@ -180,11 +180,12 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final List<Widget> _widgetOptions = <Widget>[
+    final List<Widget> widgetOptions = <Widget>[
       _homeTab,
       BookingTab(initialDestination: _initialDestination),
       const SchedulesTab(),
       BookedFlightsTab(bookedFlights: _bookedFlights, onRefresh: _loadBookings),
+      SummaryFlightsTab(bookedFlights: _bookedFlights, onRefresh: _loadBookings), //added new tab for summary of flights - Nov. 12, 2025
       _profileTab,
     ];
 
@@ -201,32 +202,8 @@ class _HomeScreenState extends State<HomeScreen> {
           ],
         ),
       ),
-      body: Column(
-        children: [
-          if (_selectedIndex == 0)
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(12),
-              color: Colors.blue.shade100,
-              child: const Row(
-                children: [
-                  Icon(Icons.notifications, color: Colors.blue),
-                  SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      "⚠️ Notice: Please read the updated booking policy.",
-                      style: TextStyle(fontSize: 14, color: Colors.black87),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          Expanded(
-            child: Center(
-              child: widgetOptions.elementAt(_selectedIndex),
-            ),
-          ),
-        ],
+      body: Center(
+        child: widgetOptions.elementAt(_selectedIndex),
       ),
       bottomNavigationBar: BottomNavigationBar(
         type: BottomNavigationBarType.fixed,
@@ -235,7 +212,9 @@ class _HomeScreenState extends State<HomeScreen> {
           BottomNavigationBarItem(icon: Icon(Icons.flight), label: 'Book Flight'),
           BottomNavigationBarItem(icon: Icon(Icons.schedule), label: 'Schedules'),
           BottomNavigationBarItem(icon: Icon(Icons.bookmark), label: 'My Bookings'),
+          BottomNavigationBarItem(icon: Icon(Icons.book), label: 'Summary Flights'), //added new buttons for summary of flights - Nov. 12, 2025
           BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profile'),
+          
         ],
         currentIndex: _selectedIndex,
         onTap: _onItemTapped,

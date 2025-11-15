@@ -29,7 +29,7 @@ class PaymentScreen extends StatefulWidget {
   final String email;
 
   const PaymentScreen({
-    Key? key,
+    super.key,
     required this.departureFlight,
     this.returnFlight,
     required this.selectedBundle,
@@ -48,7 +48,7 @@ class PaymentScreen extends StatefulWidget {
     required this.nationality,
     required this.contactNumber,
     required this.email,
-  }) : super(key: key);
+  });
 
   @override
   _PaymentScreenState createState() => _PaymentScreenState();
@@ -59,7 +59,6 @@ class _PaymentScreenState extends State<PaymentScreen> {
   String _selectedEWallet = 'GCash'; // To track GCash or PayMaya
   bool _saveCardDetails = false;
   bool _isProcessing = false;
-  bool _policyAccepted = false;
 
   // Controllers for Card
   final _cardNumberController = TextEditingController();
@@ -223,8 +222,6 @@ class _PaymentScreenState extends State<PaymentScreen> {
                 _buildBankTransferDetailsForm(),
               const SizedBox(height: 24),
               _buildReviewAndConfirm(),
-              const SizedBox(height: 16),
-              _buildPolicyAcceptanceCheckbox(),
             ],
           ),
         ),
@@ -502,21 +499,6 @@ class _PaymentScreenState extends State<PaymentScreen> {
     );
   }
 
-  Widget _buildPolicyAcceptanceCheckbox() {
-    return Card(
-      elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: CheckboxListTile(
-        title: const Text("I agree to the booking policy."),
-        value: _policyAccepted,
-        onChanged: (val) {
-          setState(() => _policyAccepted = val ?? false);
-        },
-        contentPadding: const EdgeInsets.all(8.0),
-      ),
-    );
-  }
-  
   Widget _buildPayNowButton() {
     final formatCurrency = NumberFormat.currency(locale: 'en_PH', symbol: '₱');
 
@@ -543,7 +525,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
             ],
           ),
           ElevatedButton(
-            onPressed: (_isProcessing || !_policyAccepted) ? null : _processPayment,
+            onPressed: _isProcessing ? null : _processPayment,
             style: ElevatedButton.styleFrom(
               padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 16),
               textStyle: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),

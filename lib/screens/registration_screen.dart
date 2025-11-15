@@ -1,6 +1,5 @@
 import 'package:elective3project/database/database_helper.dart';
 import 'package:elective3project/models/user.dart';
-import 'package:elective3project/screens/terms_screen.dart';
 import 'package:flutter/material.dart';
 
 class RegistrationScreen extends StatefulWidget {
@@ -16,7 +15,6 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
-  bool _termsAccepted = false;
 
   @override
   void dispose() {
@@ -114,39 +112,11 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                           return null;
                         },
                       ),
-                      const SizedBox(height: 16.0),
-                      CheckboxListTile(
-                        title: Row(
-                          children: [
-                            const Text("I accept the "),
-                            GestureDetector(
-                              onTap: () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(builder: (_) => const TermsScreen()),
-                                );
-                              },
-                              child: const Text(
-                                "Terms & Conditions",
-                                style: TextStyle(
-                                  color: Colors.blue,
-                                  decoration: TextDecoration.underline,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                        value: _termsAccepted,
-                        onChanged: (val) {
-                          setState(() => _termsAccepted = val ?? false);
-                        },
-                        contentPadding: EdgeInsets.zero,
-                      ),
                       const SizedBox(height: 32.0),
                       SizedBox(
                         width: double.infinity,
                         child: ElevatedButton(
-                          onPressed: _termsAccepted ? () async {
+                          onPressed: () async {
                             if (_formKey.currentState!.validate()) {
                               final user = User(
                                 username: _usernameController.text,
@@ -160,7 +130,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                               );
                               Navigator.pop(context);
                             }
-                          } : null,
+                          },
                           child: const Text('Register', style: TextStyle(color: Color(0xFF000080))),
                         ),
                       ),
