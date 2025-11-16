@@ -53,7 +53,13 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Text('Create Account', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+                      const Text(
+                        'Create Account',
+                        style: TextStyle(
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
                       const SizedBox(height: 32.0),
                       TextFormField(
                         controller: _usernameController,
@@ -118,20 +124,67 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                         child: ElevatedButton(
                           onPressed: () async {
                             if (_formKey.currentState!.validate()) {
-                              final user = User(
-                                username: _usernameController.text,
-                                email: _emailController.text,
-                                password: _passwordController.text,
-                              );
-                              final db = DatabaseHelper();
-                              await db.insertUser(user);
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(content: Text('Registration Successful')),
-                              );
-                              Navigator.pop(context);
+                              try {
+                                final user = User(
+                                  username: _usernameController.text.trim(),
+                                  email: _emailController.text.trim(),
+                                  password: _passwordController.text,
+                                );
+                                final db = DatabaseHelper();
+                                await db.insertUser(user);
+
+                                if (!mounted) return;
+
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text(
+                                      'Registration Successful! Please login.',
+                                    ),
+                                    duration: Duration(seconds: 2),
+                                  ),
+                                );
+
+                                // Navigate back to login after a short delay
+                                Future.delayed(
+                                  const Duration(milliseconds: 500),
+                                  () {
+                                    if (mounted) {
+                                      Navigator.pop(context);
+                                    }
+                                  },
+                                );
+                              } catch (e) {
+                                if (!mounted) return;
+
+                                String errorMessage = 'Registration failed';
+                                if (e.toString().contains(
+                                  'UNIQUE constraint failed',
+                                )) {
+                                  if (e.toString().contains('username')) {
+                                    errorMessage =
+                                        'Username already exists. Please choose another.';
+                                  } else if (e.toString().contains('email')) {
+                                    errorMessage =
+                                        'Email already exists. Please use another email.';
+                                  }
+                                } else {
+                                  errorMessage = 'Error: ${e.toString()}';
+                                }
+
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text(errorMessage),
+                                    duration: const Duration(seconds: 3),
+                                    backgroundColor: Colors.red,
+                                  ),
+                                );
+                              }
                             }
                           },
-                          child: const Text('Register', style: TextStyle(color: Color(0xFF000080))),
+                          child: const Text(
+                            'Register',
+                            style: TextStyle(color: Color(0xFF000080)),
+                          ),
                         ),
                       ),
                       const SizedBox(height: 16.0),
