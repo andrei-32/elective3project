@@ -1,5 +1,7 @@
 import 'package:elective3project/database/database_helper.dart';
+import 'package:elective3project/models/user.dart';
 import 'package:elective3project/services/email_service.dart';
+import 'package:elective3project/screens/password_reset_screen.dart';
 import 'package:flutter/material.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -37,21 +39,25 @@ class _LoginScreenState extends State<LoginScreen> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 const Text(
-                  'Enter your username to receive a password reset code.',
+                  'Enter your email address to receive a password reset code.',
                   style: TextStyle(fontSize: 14, color: Colors.grey),
                 ),
                 const SizedBox(height: 16),
                 TextFormField(
                   controller: emailController,
+                  keyboardType: TextInputType.emailAddress,
                   decoration: const InputDecoration(
-                    labelText: 'Username',
-                    hintText: 'Enter your username',
-                    prefixIcon: Icon(Icons.person),
+                    labelText: 'Email Address',
+                    hintText: 'Enter your email',
+                    prefixIcon: Icon(Icons.email),
                     border: OutlineInputBorder(),
                   ),
                   validator: (value) {
                     if (value == null || value.isEmpty) {
-                      return 'Please enter your username';
+                      return 'Please enter your email';
+                    }
+                    if (!value.contains('@')) {
+                      return 'Please enter a valid email';
                     }
                     return null;
                   },
@@ -67,8 +73,10 @@ class _LoginScreenState extends State<LoginScreen> {
             ElevatedButton(
               onPressed: () async {
                 if (formKey.currentState!.validate()) {
-                  await _handlePasswordReset(emailController.text.trim());
+                  // Close dialog first
                   if (mounted) Navigator.pop(context);
+                  // Then handle reset
+                  await _handlePasswordReset(emailController.text.trim());
                 }
               },
               child: const Text('Send Reset Code'),
@@ -80,69 +88,58 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   /// Handles the password reset process
-  Future<void> _handlePasswordReset(String username) async {
+  Future<void> _handlePasswordReset(String email) async {
     final db = DatabaseHelper();
-    final user = await db.getUserByUsername(username);
+    // Find user by email instead of username
+    final allUsers = await db.getAllUsers();
+    User? user;
+    for (var u in allUsers) {
+      if (u.email == email) {
+        user = u;
+        break;
+      }
+    }
 
     if (!mounted) return;
 
     if (user == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Username not found'),
+          content: Text('Email address not found in our system'),
           duration: Duration(seconds: 2),
         ),
       );
       return;
     }
 
-    // Show loading dialog
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (BuildContext context) {
-        return const AlertDialog(
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              CircularProgressIndicator(),
-              SizedBox(height: 16),
-              Text('Sending reset code to your email...'),
-            ],
-          ),
-        );
-      },
-    );
-
     // Generate reset code
     String resetCode = EmailService.generateResetCode();
 
-    // Send email
-    bool emailSent = await EmailService.sendPasswordResetEmail(
+    // Send email with reset link
+    final emailResult = await EmailService.sendPasswordResetEmail(
       user.email,
       user.username,
       resetCode,
     );
 
     if (!mounted) return;
-    Navigator.pop(context); // Close loading dialog
 
-    if (emailSent) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            'Reset code sent to ${user.email}. Please check your email.',
-          ),
-          duration: const Duration(seconds: 4),
+    if (emailResult['success'] == true) {
+      // Navigate to password reset screen
+      Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (context) =>
+              PasswordResetScreen(email: user!.email, resetCode: resetCode),
         ),
       );
     } else {
+      final errorMessage =
+          emailResult['error'] ?? 'Failed to generate reset code.';
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            'Failed to send reset email. Please check email configuration.',
-          ),
-          duration: Duration(seconds: 3),
+        SnackBar(
+          content: Text(errorMessage),
+          duration: const Duration(seconds: 5),
+          backgroundColor: Colors.red,
         ),
       );
     }
