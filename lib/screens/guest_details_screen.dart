@@ -104,24 +104,102 @@ class GuestDetailsScreenState extends State<GuestDetailsScreen> {
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.start,
-                    children: const [
-                      SizedBox(height: 40),
-                      Text(
-                        'Privacy Policy',
+                    children: [
+                      const SizedBox(height: 40),
+                      const Text(
+                        'FlyQuest Privacy Policy',
                         style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                       ),
-                      SizedBox(height: 16),
-                      Text(
-                        '''
-Your privacy policy content goes here.
-
-1. Information We Collect
-...
-2. How We Use Your Information
-...
-3. Information Sharing and Disclosure
-...
-                        ''',
+                      const SizedBox(height: 16),
+                      const Text(
+                        'FlyQuest Airlines values your privacy. This Privacy Policy explains how we collect, use, and protect your personal information.',
+                      ),
+                      const SizedBox(height: 16),
+                      const Text(
+                        '1. Information We Collect',
+                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                      ),
+                      const SizedBox(height: 8),
+                      const Text(
+                        'We may collect the following personal information when you book a flight or use our services:',
+                      ),
+                      const SizedBox(height: 8),
+                      const Padding(
+                        padding: EdgeInsets.only(left: 16.0),
+                        child: Text('• Full name'),
+                      ),
+                      const Padding(
+                        padding: EdgeInsets.only(left: 16.0),
+                        child: Text('• Date of birth'),
+                      ),
+                      const Padding(
+                        padding: EdgeInsets.only(left: 16.0),
+                        child: Text('• Contact details (email and phone number)'),
+                      ),
+                      const SizedBox(height: 16),
+                      const Text(
+                        '2. How We Use Your Information',
+                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                      ),
+                      const SizedBox(height: 8),
+                      const Text('We use your information to:'),
+                      const SizedBox(height: 8),
+                      const Padding(
+                        padding: EdgeInsets.only(left: 16.0),
+                        child: Text('• Process and confirm your bookings'),
+                      ),
+                      const Padding(
+                        padding: EdgeInsets.only(left: 16.0),
+                        child: Text('• Contact you for updates or support'),
+                      ),
+                      const Padding(
+                        padding: EdgeInsets.only(left: 16.0),
+                        child: Text('• Improve our services and customer experience'),
+                      ),
+                      const SizedBox(height: 16),
+                      const Text(
+                        '3. Sharing of Information',
+                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                      ),
+                      const SizedBox(height: 8),
+                      const Text(
+                        'We do not sell your information.\nWe may share your data only when required to:',
+                      ),
+                      const SizedBox(height: 8),
+                      const Padding(
+                        padding: EdgeInsets.only(left: 16.0),
+                        child: Text('• Provide airline-related services'),
+                      ),
+                      const Padding(
+                        padding: EdgeInsets.only(left: 16.0),
+                        child: Text('• Comply with legal or government requirements'),
+                      ),
+                      const SizedBox(height: 16),
+                      const Text(
+                        '4. Data Protection',
+                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                      ),
+                      const SizedBox(height: 8),
+                      const Text(
+                        'We use reasonable security measures to keep your information safe and prevent unauthorized access.',
+                      ),
+                      const SizedBox(height: 16),
+                      const Text(
+                        '5. Your Rights',
+                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                      ),
+                      const SizedBox(height: 8),
+                      const Text(
+                        'You may request to access, update, or delete your personal information by contacting us.',
+                      ),
+                      const SizedBox(height: 16),
+                      const Text(
+                        '6. Contact Us',
+                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                      ),
+                      const SizedBox(height: 8),
+                      const Text(
+                        'For questions or concerns about this Privacy Policy, email us at FlyQuest@gmail.com',
                       ),
                     ],
                   ),
