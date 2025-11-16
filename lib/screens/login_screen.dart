@@ -1,10 +1,7 @@
 import 'package:elective3project/database/database_helper.dart';
 import 'package:elective3project/models/user.dart';
-<<<<<<< HEAD
-=======
 import 'package:elective3project/services/email_service.dart';
 import 'package:elective3project/screens/password_reset_screen.dart';
->>>>>>> 7a216ea75d2d1eb69f01744958c44f4881f3d2d0
 import 'package:flutter/material.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -31,8 +28,6 @@ class _LoginScreenState extends State<LoginScreen> {
       final username = _usernameController.text;
       final password = _passwordController.text;
 
-      // *** THIS IS THE FIX ***
-      // Changed db.getUser(...) to the correct method name: db.getUserByCredentials(...)
       final User? user = await db.getUserByCredentials(username, password);
 
       setState(() {
@@ -40,16 +35,12 @@ class _LoginScreenState extends State<LoginScreen> {
       });
 
       if (user != null) {
-        // Handle admin login
         if (user.username == 'admin' && user.password == 'admin123') {
           Navigator.pushReplacementNamed(context, '/admin_home');
         } else {
-          // Handle regular user login
-          // Pass the user ID to the home screen so other screens can use it
           Navigator.pushReplacementNamed(context, '/home', arguments: user.id);
         }
       } else {
-        // Show error message if login fails
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Invalid username or password.'),
@@ -60,7 +51,6 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
-  /// Shows the forgot password dialog
   void _showForgotPasswordDialog() {
     final emailController = TextEditingController();
     final formKey = GlobalKey<FormState>();
@@ -111,9 +101,7 @@ class _LoginScreenState extends State<LoginScreen> {
             ElevatedButton(
               onPressed: () async {
                 if (formKey.currentState!.validate()) {
-                  // Close dialog first
                   if (mounted) Navigator.pop(context);
-                  // Then handle reset
                   await _handlePasswordReset(emailController.text.trim());
                 }
               },
@@ -125,10 +113,8 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
-  /// Handles the password reset process
   Future<void> _handlePasswordReset(String email) async {
     final db = DatabaseHelper();
-    // Find user by email instead of username
     final allUsers = await db.getAllUsers();
     User? user;
     for (var u in allUsers) {
@@ -150,10 +136,8 @@ class _LoginScreenState extends State<LoginScreen> {
       return;
     }
 
-    // Generate reset code
     String resetCode = EmailService.generateResetCode();
 
-    // Send email with reset link
     final emailResult = await EmailService.sendPasswordResetEmail(
       user.email,
       user.username,
@@ -163,7 +147,6 @@ class _LoginScreenState extends State<LoginScreen> {
     if (!mounted) return;
 
     if (emailResult['success'] == true) {
-      // Navigate to password reset screen
       Navigator.of(context).push(
         MaterialPageRoute(
           builder: (context) =>
@@ -186,8 +169,6 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-<<<<<<< HEAD
-=======
       appBar: AppBar(
         title: Row(
           children: [
@@ -206,7 +187,6 @@ class _LoginScreenState extends State<LoginScreen> {
           ],
         ),
       ),
->>>>>>> 7a216ea75d2d1eb69f01744958c44f4881f3d2d0
       body: Center(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(24.0),
@@ -265,7 +245,6 @@ class _LoginScreenState extends State<LoginScreen> {
                         });
                       },
                     ),
-<<<<<<< HEAD
                   ),
                   validator: (value) {
                     if (value == null || value.isEmpty) {
@@ -278,9 +257,9 @@ class _LoginScreenState extends State<LoginScreen> {
                 _isLoading
                     ? const Center(child: CircularProgressIndicator())
                     : ElevatedButton(
-                  onPressed: _login,
-                  child: const Text('Login'),
-                ),
+                        onPressed: _login,
+                        child: const Text('Login'),
+                      ),
                 const SizedBox(height: 16),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -291,81 +270,15 @@ class _LoginScreenState extends State<LoginScreen> {
                         Navigator.pushNamed(context, '/registration');
                       },
                       child: const Text('Sign Up'),
-=======
-                    const SizedBox(height: 32.0),
-                    TextField(
-                      controller: _usernameController,
-                      decoration: const InputDecoration(
-                        labelText: 'Username',
-                        prefixIcon: Icon(Icons.person),
-                      ),
-                    ),
-                    const SizedBox(height: 16.0),
-                    TextField(
-                      controller: _passwordController,
-                      obscureText: true,
-                      decoration: const InputDecoration(
-                        labelText: 'Password',
-                        prefixIcon: Icon(Icons.lock),
-                      ),
-                    ),
-                    const SizedBox(height: 32.0),
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton(
-                        onPressed: () async {
-                          if (_usernameController.text == 'admin' &&
-                              _passwordController.text == 'admin') {
-                            Navigator.pushReplacementNamed(
-                              context,
-                              '/admin_home',
-                            );
-                          } else {
-                            final db = DatabaseHelper();
-                            final user = await db.getUser(
-                              _usernameController.text,
-                              _passwordController.text,
-                            );
-                            if (!mounted) return;
-                            if (user != null) {
-                              Navigator.pushReplacementNamed(
-                                context,
-                                '/home',
-                                arguments: user.id,
-                              );
-                            } else {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text('Invalid username or password'),
-                                ),
-                              );
-                            }
-                          }
-                        },
-                        child: const Text(
-                          'Login',
-                          style: TextStyle(color: Color(0xFF000080)),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 16.0),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        TextButton(
-                          onPressed: () {
-                            Navigator.pushNamed(context, '/registration');
-                          },
-                          child: const Text('Sign Up'),
-                        ),
-                        TextButton(
-                          onPressed: _showForgotPasswordDialog,
-                          child: const Text('Forgot Password?'),
-                        ),
-                      ],
->>>>>>> 7a216ea75d2d1eb69f01744958c44f4881f3d2d0
                     ),
                   ],
+                ),
+                Align(
+                  alignment: Alignment.center,
+                  child: TextButton(
+                    onPressed: _showForgotPasswordDialog,
+                    child: const Text('Forgot Password?'),
+                  ),
                 ),
               ],
             ),

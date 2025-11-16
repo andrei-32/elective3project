@@ -13,7 +13,7 @@ class PaymentScreen extends StatefulWidget {
   final Map<String, dynamic> departureFlight;
   final Map<String, dynamic>? returnFlight;
   final String selectedBundle;
-  final double bundlePrice;
+  final double totalPrice;
   final String origin;
   final String destination;
   final String? origin2;
@@ -28,13 +28,14 @@ class PaymentScreen extends StatefulWidget {
   final String nationality;
   final String contactNumber;
   final String email;
+  final String flightClass;
 
   const PaymentScreen({
     super.key,
     required this.departureFlight,
     this.returnFlight,
     required this.selectedBundle,
-    required this.bundlePrice,
+    required this.totalPrice,
     required this.origin,
     required this.destination,
     this.origin2,
@@ -49,6 +50,7 @@ class PaymentScreen extends StatefulWidget {
     required this.nationality,
     required this.contactNumber,
     required this.email,
+    required this.flightClass,
   });
 
   @override
@@ -119,7 +121,6 @@ class _PaymentScreenState extends State<PaymentScreen> {
           finalPaymentMethod = 'E-wallet ($_selectedEWallet)';
         }
 
-        // --- FIX: Convert DateTime objects in flight details to String before encoding ---
         final departureFlightDetailsEncodable = Map<String, dynamic>.from(
           widget.departureFlight,
         );
@@ -142,7 +143,6 @@ class _PaymentScreenState extends State<PaymentScreen> {
             return value;
           });
         }
-        // --- END FIX ---
 
         final newBooking = Booking(
           bookingReference: bookingReference,
@@ -158,18 +158,19 @@ class _PaymentScreenState extends State<PaymentScreen> {
           guestLastName: widget.lastName,
           departureFlightDetails: jsonEncode(
             departureFlightDetailsEncodable,
-          ), // Use the fixed map
+          ),
           returnFlightDetails: returnFlightDetailsEncodable != null
               ? jsonEncode(returnFlightDetailsEncodable)
-              : null, // Use the fixed map
+              : null,
           selectedBundle: widget.selectedBundle,
-          totalPrice: widget.bundlePrice,
+          totalPrice: widget.totalPrice,
           paymentMethod: finalPaymentMethod,
           status: 'Confirmed',
+          flightClass: widget.flightClass, // Added flightClass
         );
 
         // Save to database
-        await dbHelper.insertBooking(newBooking);
+        await dbHelper.insertBooking(newBooking, 1);
 
         // Send booking confirmation email
         final dateFormat = DateFormat('MMM d, yyyy');
@@ -189,7 +190,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
           guestName: '${widget.firstName} ${widget.lastName}',
           tripType: widget.tripType,
           selectedBundle: widget.selectedBundle,
-          totalPrice: widget.bundlePrice,
+          totalPrice: widget.totalPrice,
           paymentMethod: finalPaymentMethod,
         );
 
@@ -300,8 +301,6 @@ class _PaymentScreenState extends State<PaymentScreen> {
       contentPadding: EdgeInsets.zero,
     );
   }
-
-  // --- FORM WIDGETS FOR EACH PAYMENT TYPE ---
 
   Widget _buildCardDetailsForm() {
     return Card(
@@ -496,8 +495,6 @@ class _PaymentScreenState extends State<PaymentScreen> {
     );
   }
 
-  // --- REVIEW AND PAY BUTTON WIDGETS ---
-
   Widget _buildReviewAndConfirm() {
     final formatCurrency = NumberFormat.currency(locale: 'en_PH', symbol: '₱');
     final dateFormat = DateFormat('MMM d, yyyy');
@@ -537,7 +534,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
             const Divider(height: 24),
             _buildReviewDetailRow(
               'Total Amount:',
-              formatCurrency.format(widget.bundlePrice),
+              formatCurrency.format(widget.totalPrice),
               isTotal: true,
             ),
           ],
@@ -593,7 +590,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
             children: [
               const Text('Total', style: TextStyle(color: Colors.black54)),
               Text(
-                formatCurrency.format(widget.bundlePrice),
+                formatCurrency.format(widget.totalPrice),
                 style: const TextStyle(
                   fontSize: 24,
                   fontWeight: FontWeight.bold,

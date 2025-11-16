@@ -1,12 +1,7 @@
 import 'package:elective3project/screens/flight_results_screen.dart';
 import 'package:elective3project/widgets/passenger_counter.dart';
 import 'package:flutter/material.dart';
-<<<<<<< HEAD
-import 'package:elective3project/database/database_helper.dart';
-
-=======
 import 'package:intl/intl.dart';
->>>>>>> 7a216ea75d2d1eb69f01744958c44f4881f3d2d0
 
 class BookingTab extends StatefulWidget {
   final String? initialDestination;

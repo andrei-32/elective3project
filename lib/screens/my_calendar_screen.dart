@@ -109,7 +109,7 @@ class _MyCalendarScreenState extends State<MyCalendarScreen> {
     return bookings.map((booking) => CalendarEvent(
       title: 'Flight to ${booking.destination}',
       type: EventType.booking,
-      date: booking.flight_date,
+      date: booking.departureDate,
     )).toList();
   }
 

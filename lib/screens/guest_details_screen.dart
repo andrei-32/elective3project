@@ -1,4 +1,3 @@
-
 import 'package:elective3project/screens/payment_screen.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
@@ -33,10 +32,10 @@ class GuestDetailsScreen extends StatefulWidget {
   });
 
   @override
-  _GuestDetailsScreenState createState() => _GuestDetailsScreenState();
+  GuestDetailsScreenState createState() => GuestDetailsScreenState();
 }
 
-class _GuestDetailsScreenState extends State<GuestDetailsScreen> {
+class GuestDetailsScreenState extends State<GuestDetailsScreen> {
   final _formKey = GlobalKey<FormState>();
   String? _title;
   final _firstNameController = TextEditingController();
@@ -422,7 +421,7 @@ Your privacy policy content goes here.
                           departureFlight: widget.departureFlight,
                           returnFlight: widget.returnFlight,
                           selectedBundle: widget.selectedBundle,
-                          bundlePrice: finalTotalPrice, // Use the calculated final total price
+                          totalPrice: finalTotalPrice,
                            origin: widget.origin,
                           destination: widget.destination,
                           origin2: widget.origin2,
@@ -437,6 +436,7 @@ Your privacy policy content goes here.
                           nationality: _nationalityController.text,
                           contactNumber: _contactNumberController.text,
                           email: _emailController.text,
+                          flightClass: 'Economy',
                         ),
                       ),
                     );

@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:elective3project/database/database_helper.dart';
 import 'package:elective3project/screens/admin_home_screen.dart';
 import 'package:elective3project/screens/flight_details_screen.dart';
-<<<<<<< HEAD
 import 'package:elective3project/screens/profile_screen.dart'; // Import the new profile screen
 import 'package:elective3project/screens/my_calendar_screen.dart';
 import 'package:elective3project/screens/home_screen.dart';
@@ -10,11 +9,6 @@ import 'package:flutter/material.dart';
 import 'screens/login_screen.dart';
 import 'screens/registration_screen.dart';
 import 'screens/splash_screen.dart'; // Import the new splash screen
-=======
-import 'screens/login_screen.dart';
-import 'screens/registration_screen.dart';
-import 'screens/home_screen.dart';
-import 'screens/splash_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -26,7 +20,6 @@ void main() async {
   } catch (e) {
     print('Database initialization error: $e');
   }
->>>>>>> 7a216ea75d2d1eb69f01744958c44f4881f3d2d0
 
   runApp(const MainApp());
 }
@@ -82,10 +75,6 @@ class MainApp extends StatelessWidget {
       initialRoute: '/',
       routes: {
         '/': (context) => const SplashScreen(),
-<<<<<<< HEAD
-        // The app will start here
-=======
->>>>>>> 7a216ea75d2d1eb69f01744958c44f4881f3d2d0
         '/login': (context) => const LoginScreen(),
         '/registration': (context) => const RegistrationScreen(),
         '/home': (context) => const HomeScreen(),
@@ -95,14 +84,11 @@ class MainApp extends StatelessWidget {
         // Add the new profile route
         '/holidays': (context) {
           // Get arguments passed during navigation
-          final userId = ModalRoute
-              .of(context)!
-              .settings
-              .arguments as int?;
+          final userId = ModalRoute.of(context)!.settings.arguments as int?;
           // Pass the userId to the screen's constructor
           return MyCalendarScreen(userId: userId);
         },
-      }
+      },
     );
   }
 }

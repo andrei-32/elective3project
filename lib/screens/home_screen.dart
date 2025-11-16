@@ -43,14 +43,6 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
-  // Callback to switch tabs from another tab
-  void _switchTab(int index) {
-    setState(() {
-      _selectedIndex = index;
-    });
-  }
-
-<<<<<<< HEAD
   // This is the home tab UI, wrapped in a getter for cleanliness.
   Widget get _homeTab => SingleChildScrollView(
     child: Column(
@@ -153,14 +145,10 @@ class _HomeScreenState extends State<HomeScreen> {
       ],
     ),
   );
-=======
-  final Widget _profileTab = const Center(child: Text('Profile2'));
->>>>>>> 7a216ea75d2d1eb69f01744958c44f4881f3d2d0
 
   @override
   void initState() {
     super.initState();
-<<<<<<< HEAD
     // This ensures we get the arguments (like userId) after the first frame is built.
     WidgetsBinding.instance.addPostFrameCallback((_) {
       // Check if arguments were passed to this screen (e.g., from login).
@@ -172,14 +160,14 @@ class _HomeScreenState extends State<HomeScreen> {
             _loadBookings(); // Load bookings for this user.
           });
         }
+      } else {
+        // Fallback or default user if no ID is passed
+        setState((){
+          _userId = 1;
+          _loadBookings();
+        });
       }
     });
-=======
-    // TODO: This should be replaced by a proper user session/login system
-    // For now, we hardcode the user ID to 1 to match the one used in payment_screen.
-    _userId = 1; 
-    _loadBookings(); // Load bookings for the default user
->>>>>>> 7a216ea75d2d1eb69f01744958c44f4881f3d2d0
   }
 
   // Fetches bookings from the database using the user ID.
@@ -201,7 +189,7 @@ class _HomeScreenState extends State<HomeScreen> {
       _selectedIndex = index;
       _initialDestination = null; // Reset destination when manually changing tabs
     });
-    // If the 'My Bookings' tab is selected (index 3), refresh the bookings list.
+    // If the 'My Bookings' tab is selected, refresh the bookings list.
     if (index == 3) {
       _loadBookings();
     }
@@ -209,25 +197,15 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-<<<<<<< HEAD
     // Define your widget options list directly inside the build method.
     // This ensures they receive the updated `_userId`.
     final List<Widget> _widgetOptions = <Widget>[
-=======
-    final List<Widget> widgetOptions = <Widget>[
->>>>>>> 7a216ea75d2d1eb69f01744958c44f4881f3d2d0
       _homeTab,
-      // *** CHANGE: Pass userId to BookingTab ***
       BookingTab(initialDestination: _initialDestination, userId: _userId),
       const SchedulesTab(),
       BookedFlightsTab(bookedFlights: _bookedFlights, onRefresh: _loadBookings),
-<<<<<<< HEAD
-      // *** CHANGE: Pass userId to ProfileTab ***
+      SummaryFlightsTab(bookedFlights: _bookedFlights, onRefresh: _loadBookings), 
       ProfileTab(userId: _userId),
-=======
-      SummaryFlightsTab(bookedFlights: _bookedFlights, onRefresh: _loadBookings), //added new tab for summary of flights - Nov. 12, 2025
-      _profileTab,
->>>>>>> 7a216ea75d2d1eb69f01744958c44f4881f3d2d0
     ];
 
     return Scaffold(
@@ -243,7 +221,7 @@ class _HomeScreenState extends State<HomeScreen> {
         automaticallyImplyLeading: false, // Prevents a back button from appearing
       ),
       body: Center(
-        child: widgetOptions.elementAt(_selectedIndex),
+        child: _widgetOptions.elementAt(_selectedIndex),
       ),
       bottomNavigationBar: BottomNavigationBar(
         type: BottomNavigationBarType.fixed,
@@ -252,9 +230,8 @@ class _HomeScreenState extends State<HomeScreen> {
           BottomNavigationBarItem(icon: Icon(Icons.flight), label: 'Book Flight'),
           BottomNavigationBarItem(icon: Icon(Icons.schedule), label: 'Schedules'),
           BottomNavigationBarItem(icon: Icon(Icons.bookmark), label: 'My Bookings'),
-          BottomNavigationBarItem(icon: Icon(Icons.book), label: 'Summary Flights'), //added new buttons for summary of flights - Nov. 12, 2025
+          BottomNavigationBarItem(icon: Icon(Icons.book), label: 'Summary Flights'),
           BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profile'),
-          
         ],
         currentIndex: _selectedIndex,
         onTap: _onItemTapped,
@@ -274,6 +251,8 @@ class _HomeScreenState extends State<HomeScreen> {
       case 3:
         return 'MY BOOKINGS';
       case 4:
+        return 'SUMMARY FLIGHTS';
+      case 5:
         return 'PROFILE & SETTINGS';
       default:
         return 'FLYQUEST';
