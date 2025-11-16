@@ -38,12 +38,14 @@ class DatabaseHelper {
 
   Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
     if (oldVersion < 2) {
-       await db.execute('ALTER TABLE bookings ADD COLUMN status TEXT NOT NULL DEFAULT \'\'Confirmed\'\'');
+      await db.execute(
+        'ALTER TABLE bookings ADD COLUMN status TEXT NOT NULL DEFAULT \'\'Confirmed\'\'',
+      );
     }
     if (oldVersion < 3) {
       await _createFlightTables(db);
     }
-     if (oldVersion < 4) {
+    if (oldVersion < 4) {
       await db.execute('DROP TABLE IF EXISTS bookings');
       await _createBookingsTable(db);
     }
@@ -52,12 +54,14 @@ class DatabaseHelper {
       await db.execute('ALTER TABLE bookings ADD COLUMN destination2 TEXT');
     }
     if (oldVersion < 6) {
-      await db.execute('ALTER TABLE bookings ADD COLUMN cancellationReason TEXT');
+      await db.execute(
+        'ALTER TABLE bookings ADD COLUMN cancellationReason TEXT',
+      );
     }
   }
 
   Future<void> _createUsersTable(Database db) async {
-     await db.execute('''
+    await db.execute('''
       CREATE TABLE users(
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         username TEXT NOT NULL UNIQUE,
@@ -123,7 +127,21 @@ class DatabaseHelper {
     return await db.insert('users', user.toMap());
   }
 
-    Future<User?> getUserByUsername(String username) async {
+  Future<User?> getUser(String username, String password) async {
+    final db = await database;
+    final List<Map<String, dynamic>> maps = await db.query(
+      'users',
+      where: 'username = ? AND password = ?',
+      whereArgs: [username, password],
+    );
+
+    if (maps.isNotEmpty) {
+      return User.fromMap(maps[0]);
+    }
+    return null;
+  }
+
+  Future<User?> getUserByUsername(String username) async {
     final db = await database;
     final List<Map<String, dynamic>> maps = await db.query(
       'users',
@@ -137,19 +155,23 @@ class DatabaseHelper {
     return null;
   }
 
-
-  Future<User?> getUser(String username, String password) async {
+  Future<List<User>> getAllUsers() async {
     final db = await database;
-    final List<Map<String, dynamic>> maps = await db.query(
-      'users',
-      where: 'username = ? AND password = ?',
-      whereArgs: [username, password],
-    );
+    final List<Map<String, dynamic>> maps = await db.query('users');
 
-    if (maps.isNotEmpty) {
-      return User.fromMap(maps[0]);
-    }
-    return null;
+    return List.generate(maps.length, (i) {
+      return User.fromMap(maps[i]);
+    });
+  }
+
+  Future<int> updateUser(User user) async {
+    final db = await database;
+    return await db.update(
+      'users',
+      user.toMap(),
+      where: 'id = ?',
+      whereArgs: [user.id],
+    );
   }
 
   // --- Booking Methods ---
@@ -174,7 +196,10 @@ class DatabaseHelper {
 
   Future<List<Booking>> getAllBookings() async {
     final db = await database;
-    final List<Map<String, dynamic>> maps = await db.query('bookings', orderBy: 'id DESC');
+    final List<Map<String, dynamic>> maps = await db.query(
+      'bookings',
+      orderBy: 'id DESC',
+    );
 
     return List.generate(maps.length, (i) {
       return Booking.fromMap(maps[i]);
@@ -218,17 +243,24 @@ class DatabaseHelper {
     return null;
   }
 
-  Future<void> saveDailyPrice(DateTime date, String destination, double? price) async {
+  Future<void> saveDailyPrice(
+    DateTime date,
+    String destination,
+    double? price,
+  ) async {
     final db = await database;
     final dateString = date.toIso8601String().split('T')[0];
-    await db.insert(
-      'daily_prices',
-      {'date': dateString, 'destination': destination, 'price': price},
-      conflictAlgorithm: ConflictAlgorithm.replace,
-    );
+    await db.insert('daily_prices', {
+      'date': dateString,
+      'destination': destination,
+      'price': price,
+    }, conflictAlgorithm: ConflictAlgorithm.replace);
   }
 
-  Future<List<Map<String, dynamic>>> getFlights(DateTime date, String destination) async {
+  Future<List<Map<String, dynamic>>> getFlights(
+    DateTime date,
+    String destination,
+  ) async {
     final db = await database;
     final dateString = date.toIso8601String().split('T')[0];
     return await db.query(
@@ -238,7 +270,11 @@ class DatabaseHelper {
     );
   }
 
-  Future<void> saveFlights(DateTime date, String destination, List<Map<String, dynamic>> flights) async {
+  Future<void> saveFlights(
+    DateTime date,
+    String destination,
+    List<Map<String, dynamic>> flights,
+  ) async {
     final db = await database;
     final dateString = date.toIso8601String().split('T')[0];
     final batch = db.batch();
