@@ -1,8 +1,12 @@
 import 'package:elective3project/screens/flight_results_screen.dart';
 import 'package:elective3project/widgets/passenger_counter.dart';
 import 'package:flutter/material.dart';
+<<<<<<< HEAD
 import 'package:elective3project/database/database_helper.dart';
 
+=======
+import 'package:intl/intl.dart';
+>>>>>>> 7a216ea75d2d1eb69f01744958c44f4881f3d2d0
 
 class BookingTab extends StatefulWidget {
   final String? initialDestination;
@@ -20,11 +24,22 @@ class BookingTab extends StatefulWidget {
 
 class _BookingTabState extends State<BookingTab> {
   final _formKey = GlobalKey<FormState>();
-  String _tripType = 'one way';
-  String? _selectedIslandGroup;
-  String? _selectedDestination;
-  DateTime _departureDate = DateTime.now();
+  int _selectedTripTypeIndex = 0; // 0: One Way, 1: Round Trip, 2: Multi-city
+
+  // Controllers for Flight 1
+  final String _origin1 = 'Manila';
+  String? _destination1;
+  DateTime _departureDate1 = DateTime.now();
+
+  // Controllers for Round Trip
   DateTime? _returnDate;
+
+  // Controllers for Flight 2 (Multi-city)
+  String _origin2 = 'Manila';
+  String? _destination2;
+  DateTime? _departureDate2;
+
+  // Passenger and Class
   int _adults = 1;
   int _children = 0;
   int _infants = 0;
@@ -49,7 +64,6 @@ class _BookingTabState extends State<BookingTab> {
     ]
   };
 
-  final List<String> _tripTypes = ['one way', 'round trip', 'multi city'];
   final List<String> _flightClasses = ['economy', 'premium economy', 'business', 'first class'];
 
   @override
@@ -82,7 +96,7 @@ class _BookingTabState extends State<BookingTab> {
     };
 
     String finalDestination = destinationMap[destination] ?? destination;
-    
+
     String? group;
     for (var entry in _destinations.entries) {
       if (entry.value.contains(finalDestination)) {
@@ -93,32 +107,43 @@ class _BookingTabState extends State<BookingTab> {
 
     if (group != null) {
       setState(() {
-        _selectedIslandGroup = group;
-        _selectedDestination = finalDestination;
+        _destination1 = finalDestination;
       });
     }
   }
 
-  Future<void> _selectDate(BuildContext context, {bool isDeparture = true}) async {
+  Future<void> _selectDate(BuildContext context, int flightSegment) async {
+    DateTime initialDate;
+    if (flightSegment == 1) {
+      initialDate = _departureDate1;
+    } else if (flightSegment == 2 && _selectedTripTypeIndex == 1) { // Round trip return
+      initialDate = _returnDate ?? _departureDate1;
+    } else { // Multi-city flight 2
+      initialDate = _departureDate2 ?? _departureDate1;
+    }
+
     final DateTime? picked = await showDatePicker(
       context: context,
-      initialDate: (isDeparture ? _departureDate : _returnDate) ?? DateTime.now(),
+      initialDate: initialDate,
       firstDate: DateTime.now(),
       lastDate: DateTime(2101),
     );
+
     if (picked != null) {
       setState(() {
-        if (isDeparture) {
-          _departureDate = picked;
-        } else {
+        if (flightSegment == 1) {
+          _departureDate1 = picked;
+        } else if (flightSegment == 2 && _selectedTripTypeIndex == 1) { // Round trip return
           _returnDate = picked;
+        } else { // Multi-city flight 2
+          _departureDate2 = picked;
         }
       });
     }
   }
 
-  Future<void> _selectDestinationDialog(BuildContext context) async {
-    final String? result = await showDialog<String>(
+  Future<String?> _selectLocationDialog(BuildContext context) async {
+    return await showDialog<String>(
       context: context,
       builder: (BuildContext context) {
         String? tempSelectedGroup;
@@ -177,25 +202,56 @@ class _BookingTabState extends State<BookingTab> {
         );
       },
     );
+  }
 
-    if (result != null) {
-      setState(() {
-        _selectedDestination = result;
-        for (var entry in _destinations.entries) {
-          if (entry.value.contains(result)) {
-            _selectedIslandGroup = entry.key;
-            break;
-          }
-        }
-      });
-    }
+  void _showPassengerLimitWarning() {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('You have reach the maximum number of passengers. Please read are FAQ and Information section for more info'),
+      ),
+    );
   }
 
   void _searchFlights() {
-    if (_formKey.currentState!.validate()) {
-      if (_selectedDestination == null) {
+    if (!_formKey.currentState!.validate()) {
+      return;
+    }
+
+    final tripType = ['one way', 'round trip', 'multi city'][_selectedTripTypeIndex];
+
+    if (tripType == 'multi city') {
+      if (_destination1 == null || _destination2 == null || _departureDate2 == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Please fill all fields for multi-city flights.')),
+        );
+        return;
+      }
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => FlightResultsScreen(
+            tripType: tripType,
+            // Flight 1
+            origin: _origin1,
+            destination: _destination1!,
+            departureDate: _departureDate1,
+            // Flight 2
+            origin2: _origin2,
+            destination2: _destination2,
+            departureDate2: _departureDate2,
+          ),
+        ),
+      );
+    } else { // One way or Round Trip
+      if (_destination1 == null) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Please select a destination.')),
+        );
+        return;
+      }
+      if (tripType == 'round trip' && _returnDate == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Please select a return date for a round trip.')),
         );
         return;
       }
@@ -204,13 +260,52 @@ class _BookingTabState extends State<BookingTab> {
         context,
         MaterialPageRoute(
           builder: (context) => FlightResultsScreen(
-            origin: 'Manila',
-            destination: _selectedDestination!,
-            departureDate: _departureDate,
+            origin: _origin1,
+            destination: _destination1!,
+            departureDate: _departureDate1,
+            tripType: tripType,
+            returnDate: _returnDate,
           ),
         ),
       );
     }
+  }
+  
+  Widget _buildLocationField({required String label, required String? value, required VoidCallback onTap, bool isEnabled = true}) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(label, style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.grey.shade700)),
+        const SizedBox(height: 8),
+        InkWell(
+          onTap: isEnabled ? onTap : null,
+          child: InputDecorator(
+            decoration: InputDecoration(
+              prefixIcon: label == 'FROM' ? const Icon(Icons.flight_takeoff) : const Icon(Icons.flight_land),
+              border: const OutlineInputBorder(),
+              contentPadding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 16.0),
+              filled: !isEnabled,
+              fillColor: Colors.grey[200],
+            ),
+            child: Text(
+              value ?? 'Select Location',
+              style: TextStyle(fontSize: 16, color: isEnabled ? Colors.black : Colors.grey[600]),
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildDateField({required String label, required DateTime? date, required VoidCallback onTap}) {
+     return InkWell(
+      onTap: onTap,
+      child: InputDecorator(
+        decoration: InputDecoration(labelText: label, prefixIcon: const Icon(Icons.calendar_today), border: const OutlineInputBorder()),
+        child: Text(date != null ? DateFormat('MMM d, yyyy').format(date) : 'Select Date'),
+      ),
+    );
   }
 
   @override
@@ -229,97 +324,60 @@ class _BookingTabState extends State<BookingTab> {
               children: [
                 const Text('Search Your Flight', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
                 const SizedBox(height: 24.0),
-                DropdownButtonFormField<String>(
-                  value: _tripType,
-                  decoration: const InputDecoration(labelText: 'Trip Type', prefixIcon: Icon(Icons.compare_arrows), border: OutlineInputBorder()),
-                  items: _tripTypes.map((type) => DropdownMenuItem(value: type, child: Text(type))).toList(),
-                  onChanged: (value) => setState(() => _tripType = value!),
-                ),
-                const SizedBox(height: 16.0),
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text('FROM', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.grey.shade700)),
-                          const SizedBox(height: 8),
-                          InputDecorator(
-                            decoration: const InputDecoration(
-                              prefixIcon: Icon(Icons.flight_takeoff),
-                              border: OutlineInputBorder(),
-                              contentPadding: EdgeInsets.symmetric(horizontal: 12.0, vertical: 16.0),
-                            ),
-                            child: const Text('Manila', style: TextStyle(fontSize: 16)),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(width: 16.0),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text('TO', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.grey.shade700)),
-                          const SizedBox(height: 8),
-                          InkWell(
-                            onTap: () => _selectDestinationDialog(context),
-                            child: InputDecorator(
-                              decoration: const InputDecoration(
-                                prefixIcon: Icon(Icons.flight_land),
-                                border: OutlineInputBorder(),
-                                contentPadding: EdgeInsets.symmetric(horizontal: 12.0, vertical: 16.0),
-                              ),
-                              child: Text(
-                                _selectedDestination ?? 'Select Destination',
-                                style: const TextStyle(fontSize: 16),
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16.0),
-                Row(
-                  children: [
-                    Expanded(
-                      child: InkWell(
-                        onTap: () => _selectDate(context, isDeparture: true),
-                        child: InputDecorator(
-                          decoration: const InputDecoration(labelText: 'Departure Date', prefixIcon: Icon(Icons.calendar_today), border: OutlineInputBorder()),
-                          child: Text('${_departureDate.toLocal()}'.split(' ')[0]),
-                        ),
-                      ),
-                    ),
-                    if (_tripType == 'round trip') ...[
-                      const SizedBox(width: 16.0),
-                      Expanded(
-                        child: InkWell(
-                          onTap: () => _selectDate(context, isDeparture: false),
-                          child: InputDecorator(
-                            decoration: const InputDecoration(labelText: 'Return Date', prefixIcon: Icon(Icons.calendar_today), border: OutlineInputBorder()),
-                            child: Text(_returnDate != null ? '${_returnDate!.toLocal()}'.split(' ')[0] : 'Select Date'),
-                          ),
-                        ),
-                      ),
+                Center(
+                  child: ToggleButtons(
+                    isSelected: [_selectedTripTypeIndex == 0, _selectedTripTypeIndex == 1, _selectedTripTypeIndex == 2],
+                    onPressed: (index) {
+                      setState(() {
+                        _selectedTripTypeIndex = index;
+                      });
+                    },
+                    borderRadius: BorderRadius.circular(8.0),
+                    children: const [
+                      Padding(padding: EdgeInsets.symmetric(horizontal: 16.0), child: Text('One Way')),
+                      Padding(padding: EdgeInsets.symmetric(horizontal: 16.0), child: Text('Round Trip')),
+                      Padding(padding: EdgeInsets.symmetric(horizontal: 16.0), child: Text('Multi-city')),
                     ],
-                  ],
+                  ),
                 ),
+                const SizedBox(height: 24.0),
+                
+                // === Conditionally build flight forms ===
+                if (_selectedTripTypeIndex < 2) // One Way & Round Trip
+                  _buildStandardFlightForm(),
+                if (_selectedTripTypeIndex == 2) // Multi-city
+                  _buildMultiCityFlightForm(),
+
                 const SizedBox(height: 24.0),
                 const Text('Passengers', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                PassengerCounter(label: 'Adults', count: _adults, onChanged: (count) => setState(() => _adults = count >= 1 ? count : 1)),
-                PassengerCounter(label: 'Children', count: _children, onChanged: (count) => setState(() => _children = count >= 0 ? count : 0)),
-                PassengerCounter(label: 'Infants', count: _infants, onChanged: (count) => setState(() => _infants = count >= 0 ? count : 0)),
+                PassengerCounter(label: 'Adults', count: _adults, onChanged: (count) {
+                  if (count + _children > 9) {
+                    _showPassengerLimitWarning();
+                  } else {
+                    setState(() => _adults = count >= 1 ? count : 1);
+                  }
+                }),
+                PassengerCounter(label: 'Children', count: _children, onChanged: (count) {
+                  if (_adults + count > 9) {
+                    _showPassengerLimitWarning();
+                  } else {
+                    setState(() => _children = count >= 0 ? count : 0);
+                  }
+                }),
+                PassengerCounter(label: 'Infants', count: _infants, onChanged: (count) {
+                  if (count > 1) {
+                    _showPassengerLimitWarning();
+                  } else {
+                    setState(() => _infants = count >= 0 ? count : 0);
+                  }
+                }),
                 const SizedBox(height: 24.0),
                 DropdownButtonFormField<String>(
-                  value: _flightClass,
+                  initialValue: _flightClass,
                   decoration: const InputDecoration(labelText: 'Class', prefixIcon: Icon(Icons.airline_seat_recline_normal), border: OutlineInputBorder()),
                   items: _flightClasses.map((fClass) => DropdownMenuItem(value: fClass, child: Text(fClass))).toList(),
                   onChanged: (value) => setState(() => _flightClass = value!),
+                  validator: (value) => value == null ? 'Please select a class' : null,
                 ),
                 const SizedBox(height: 32.0),
                 SizedBox(
@@ -331,6 +389,111 @@ class _BookingTabState extends State<BookingTab> {
           ),
         ),
       ),
+    );
+  }
+
+  // Widget for One Way and Round Trip
+  Widget _buildStandardFlightForm() {
+    return Column(
+      children: [
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(child: _buildLocationField(label: 'FROM', value: _origin1, onTap: () {}, isEnabled: false)),
+            const SizedBox(width: 16.0),
+            Expanded(
+              child: _buildLocationField(
+                label: 'TO',
+                value: _destination1,
+                onTap: () async {
+                  final result = await _selectLocationDialog(context);
+                  if (result != null) setState(() => _destination1 = result);
+                },
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 16.0),
+        Row(
+          children: [
+            Expanded(child: _buildDateField(label: 'Departure Date', date: _departureDate1, onTap: () => _selectDate(context, 1))),
+            if (_selectedTripTypeIndex == 1) ...[ // Show Return Date for Round Trip
+              const SizedBox(width: 16.0),
+              Expanded(child: _buildDateField(label: 'Return Date', date: _returnDate, onTap: () => _selectDate(context, 2))),
+            ],
+          ],
+        ),
+      ],
+    );
+  }
+
+  // Widget for Multi-city
+  Widget _buildMultiCityFlightForm() {
+    return Column(
+      children: [
+        // --- Flight 1 ---
+        const Text("Flight 1", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+        const SizedBox(height: 8),
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              child: _buildLocationField(
+                label: 'FROM', 
+                value: _origin1, // Default to Manila
+                onTap: () {},
+                isEnabled: false,
+              )
+            ),
+            const SizedBox(width: 16.0),
+            Expanded(
+              child: _buildLocationField(
+                label: 'TO',
+                value: _destination1,
+                onTap: () async {
+                  final result = await _selectLocationDialog(context);
+                  if (result != null) setState(() => _destination1 = result);
+                },
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 16.0),
+        _buildDateField(label: 'Depart', date: _departureDate1, onTap: () => _selectDate(context, 1)),
+        const Divider(height: 32, thickness: 1),
+
+        // --- Flight 2 ---
+        const Text("Flight 2", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+        const SizedBox(height: 8),
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              child: _buildLocationField(
+                label: 'FROM',
+                value: _origin2,
+                onTap: () async {
+                  final result = await _selectLocationDialog(context);
+                  if (result != null) setState(() => _origin2 = result);
+                },
+              ),
+            ),
+            const SizedBox(width: 16.0),
+            Expanded(
+              child: _buildLocationField(
+                label: 'TO',
+                value: _destination2,
+                onTap: () async {
+                  final result = await _selectLocationDialog(context);
+                  if (result != null) setState(() => _destination2 = result);
+                },
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 16.0),
+        _buildDateField(label: 'Depart', date: _departureDate2, onTap: () => _selectDate(context, 3)),
+      ],
     );
   }
 }

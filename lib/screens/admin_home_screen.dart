@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:elective3project/database/database_helper.dart';
 import 'package:elective3project/models/booking.dart';
 import 'package:flutter/material.dart';
@@ -25,9 +27,11 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
   Future<void> _loadBookings() async {
     final db = DatabaseHelper();
     final bookings = await db.getAllBookings();
-    setState(() {
-      _bookings = bookings;
-    });
+    if (mounted) {
+      setState(() {
+        _bookings = bookings;
+      });
+    }
   }
 
   Future<void> _updateStatus(Booking booking, String newStatus) async {
@@ -48,51 +52,58 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
           ],
         ),
       ),
-      body: ListView.builder(
-        padding: const EdgeInsets.all(8.0),
-        itemCount: _bookings.length,
-        itemBuilder: (context, index) {
-          final booking = _bookings[index];
-          return Card(
-            elevation: 4.0,
-            margin: const EdgeInsets.symmetric(vertical: 8.0),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.0)),
-            child: Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('Booking ID: ${booking.id}', style: const TextStyle(fontWeight: FontWeight.bold)),
-                  const SizedBox(height: 8.0),
-                  Text('User ID: ${booking.toMap(0)['userId']}'), // A bit of a hack to get userId
-                  Text('Destination: ${booking.flight.destination}'),
-                  Text('Departure: ${booking.departureDate.toLocal().toString().split(' ')[0]} at ${booking.flight.departureTime}'),
-                  const SizedBox(height: 8.0),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Text('Status:'),
-                      DropdownButton<String>(
-                        value: booking.status,
-                        items: _statuses.map((String status) {
-                          return DropdownMenuItem<String>(
-                            value: status,
-                            child: Text(status),
-                          );
-                        }).toList(),
-                        onChanged: (String? newStatus) {
-                          if (newStatus != null) {
-                            _updateStatus(booking, newStatus);
-                          }
-                        },
-                      ),
-                    ],
-                  ),
-                ],
+      body: RefreshIndicator(
+        onRefresh: _loadBookings,
+        child: ListView.builder(
+          padding: const EdgeInsets.all(8.0),
+          itemCount: _bookings.length,
+          itemBuilder: (context, index) {
+            final booking = _bookings[index];
+            // Decode the JSON string to get flight details
+            final departureDetails = json.decode(booking.departureFlightDetails);
+
+            return Card(
+              elevation: 4.0,
+              margin: const EdgeInsets.symmetric(vertical: 8.0),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.0)),
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Booking Ref: ${booking.bookingReference}', style: const TextStyle(fontWeight: FontWeight.bold)),
+                    const SizedBox(height: 8.0),
+                    Text('User ID: ${booking.userId}'),
+                    Text('Passenger: ${booking.guestFirstName} ${booking.guestLastName}'),
+                    Text('Route: ${booking.origin} to ${booking.destination}'),
+                    Text('Departure: ${booking.departureDate.toLocal().toString().split(' ')[0]} at ${departureDetails['departureTime']}'),
+                    const SizedBox(height: 8.0),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text('Status:'),
+                        DropdownButton<String>(
+                          value: booking.status,
+                          items: _statuses.map((String status) {
+                            return DropdownMenuItem<String>(
+                              value: status,
+                              child: Text(status),
+                            );
+                          }).toList(),
+                          onChanged: (String? newStatus) {
+                            if (newStatus != null) {
+                              _updateStatus(booking, newStatus);
+                            }
+                          },
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
               ),
-            ),
-          );
-        },
+            );
+          },
+        ),
       ),
     );
   }

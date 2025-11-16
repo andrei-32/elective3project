@@ -1,4 +1,5 @@
 import 'package:elective3project/database/database_helper.dart';
+import 'package:elective3project/widgets/summary_flights_tab.dart';
 import 'package:flutter/material.dart';
 import 'package:elective3project/widgets/booking_tab.dart';
 import 'package:elective3project/widgets/schedules_tab.dart';
@@ -49,6 +50,7 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
+<<<<<<< HEAD
   // This is the home tab UI, wrapped in a getter for cleanliness.
   Widget get _homeTab => SingleChildScrollView(
     child: Column(
@@ -151,10 +153,14 @@ class _HomeScreenState extends State<HomeScreen> {
       ],
     ),
   );
+=======
+  final Widget _profileTab = const Center(child: Text('Profile2'));
+>>>>>>> 7a216ea75d2d1eb69f01744958c44f4881f3d2d0
 
   @override
   void initState() {
     super.initState();
+<<<<<<< HEAD
     // This ensures we get the arguments (like userId) after the first frame is built.
     WidgetsBinding.instance.addPostFrameCallback((_) {
       // Check if arguments were passed to this screen (e.g., from login).
@@ -168,6 +174,12 @@ class _HomeScreenState extends State<HomeScreen> {
         }
       }
     });
+=======
+    // TODO: This should be replaced by a proper user session/login system
+    // For now, we hardcode the user ID to 1 to match the one used in payment_screen.
+    _userId = 1; 
+    _loadBookings(); // Load bookings for the default user
+>>>>>>> 7a216ea75d2d1eb69f01744958c44f4881f3d2d0
   }
 
   // Fetches bookings from the database using the user ID.
@@ -189,20 +201,33 @@ class _HomeScreenState extends State<HomeScreen> {
       _selectedIndex = index;
       _initialDestination = null; // Reset destination when manually changing tabs
     });
+    // If the 'My Bookings' tab is selected (index 3), refresh the bookings list.
+    if (index == 3) {
+      _loadBookings();
+    }
   }
 
   @override
   Widget build(BuildContext context) {
+<<<<<<< HEAD
     // Define your widget options list directly inside the build method.
     // This ensures they receive the updated `_userId`.
     final List<Widget> _widgetOptions = <Widget>[
+=======
+    final List<Widget> widgetOptions = <Widget>[
+>>>>>>> 7a216ea75d2d1eb69f01744958c44f4881f3d2d0
       _homeTab,
       // *** CHANGE: Pass userId to BookingTab ***
       BookingTab(initialDestination: _initialDestination, userId: _userId),
       const SchedulesTab(),
       BookedFlightsTab(bookedFlights: _bookedFlights, onRefresh: _loadBookings),
+<<<<<<< HEAD
       // *** CHANGE: Pass userId to ProfileTab ***
       ProfileTab(userId: _userId),
+=======
+      SummaryFlightsTab(bookedFlights: _bookedFlights, onRefresh: _loadBookings), //added new tab for summary of flights - Nov. 12, 2025
+      _profileTab,
+>>>>>>> 7a216ea75d2d1eb69f01744958c44f4881f3d2d0
     ];
 
     return Scaffold(
@@ -218,7 +243,7 @@ class _HomeScreenState extends State<HomeScreen> {
         automaticallyImplyLeading: false, // Prevents a back button from appearing
       ),
       body: Center(
-        child: _widgetOptions.elementAt(_selectedIndex),
+        child: widgetOptions.elementAt(_selectedIndex),
       ),
       bottomNavigationBar: BottomNavigationBar(
         type: BottomNavigationBarType.fixed,
@@ -227,7 +252,9 @@ class _HomeScreenState extends State<HomeScreen> {
           BottomNavigationBarItem(icon: Icon(Icons.flight), label: 'Book Flight'),
           BottomNavigationBarItem(icon: Icon(Icons.schedule), label: 'Schedules'),
           BottomNavigationBarItem(icon: Icon(Icons.bookmark), label: 'My Bookings'),
+          BottomNavigationBarItem(icon: Icon(Icons.book), label: 'Summary Flights'), //added new buttons for summary of flights - Nov. 12, 2025
           BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profile'),
+          
         ],
         currentIndex: _selectedIndex,
         onTap: _onItemTapped,

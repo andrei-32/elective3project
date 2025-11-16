@@ -4,7 +4,7 @@ publish_to: 'none'
 version: 0.1.0
 
 environment:
-  sdk: ^3.11.0-49.0.dev
+  sdk: ">=3.9.0 <4.0.0"
 
 dependencies:
   flutter:
@@ -14,6 +14,12 @@ dependencies:
   intl: ^0.20.2 # Often needed for date formatting
   sqflite: ^2.3.3
   path: ^1.9.0
+<<<<<<< HEAD
+=======
+  intl: ^0.20.2
+  mailer: ^6.1.0
+  shared_preferences: ^2.2.2
+>>>>>>> 7a216ea75d2d1eb69f01744958c44f4881f3d2d0
 
 dev_dependencies:
   flutter_test:

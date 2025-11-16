@@ -1,5 +1,8 @@
+import 'package:flutter/material.dart';
+import 'package:elective3project/database/database_helper.dart';
 import 'package:elective3project/screens/admin_home_screen.dart';
 import 'package:elective3project/screens/flight_details_screen.dart';
+<<<<<<< HEAD
 import 'package:elective3project/screens/profile_screen.dart'; // Import the new profile screen
 import 'package:elective3project/screens/my_calendar_screen.dart';
 import 'package:elective3project/screens/home_screen.dart';
@@ -7,8 +10,24 @@ import 'package:flutter/material.dart';
 import 'screens/login_screen.dart';
 import 'screens/registration_screen.dart';
 import 'screens/splash_screen.dart'; // Import the new splash screen
+=======
+import 'screens/login_screen.dart';
+import 'screens/registration_screen.dart';
+import 'screens/home_screen.dart';
+import 'screens/splash_screen.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  // Initialize database
+  try {
+    final db = DatabaseHelper();
+    await db.database; // Trigger database initialization
+  } catch (e) {
+    print('Database initialization error: $e');
+  }
+>>>>>>> 7a216ea75d2d1eb69f01744958c44f4881f3d2d0
+
   runApp(const MainApp());
 }
 
@@ -17,6 +36,7 @@ class MainApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Your existing theme and routes...
     const navyBlue = Color(0xFF000080);
     const gold = Color(0xFFFFD700);
     const white = Colors.white;
@@ -49,9 +69,7 @@ class MainApp extends StatelessWidget {
           ),
         ),
         inputDecorationTheme: InputDecorationTheme(
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(8.0),
-          ),
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(8.0)),
           filled: true,
           fillColor: white,
         ),
@@ -61,11 +79,13 @@ class MainApp extends StatelessWidget {
           unselectedItemColor: white,
         ),
       ),
-      // Set the splash screen as the initial route
       initialRoute: '/',
       routes: {
         '/': (context) => const SplashScreen(),
+<<<<<<< HEAD
         // The app will start here
+=======
+>>>>>>> 7a216ea75d2d1eb69f01744958c44f4881f3d2d0
         '/login': (context) => const LoginScreen(),
         '/registration': (context) => const RegistrationScreen(),
         '/home': (context) => const HomeScreen(),

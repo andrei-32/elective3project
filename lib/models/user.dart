@@ -17,9 +17,22 @@ class User {
     this.birthday,
   });
 
+<<<<<<< HEAD
   // *** THIS IS THE FIX ***
   // Add this 'toMap' method to your User class.
   // It converts the User object into a Map.
+=======
+  // Add this factory constructor
+  factory User.fromMap(Map<String, dynamic> map) {
+    return User(
+      id: map['id'],
+      username: map['username'],
+      email: map['email'],
+      password: map['password'],
+    );
+  }
+
+>>>>>>> 7a216ea75d2d1eb69f01744958c44f4881f3d2d0
   Map<String, dynamic> toMap() {
     return {
       'id': id,
