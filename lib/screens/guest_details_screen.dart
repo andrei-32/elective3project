@@ -1,5 +1,6 @@
 
 import 'package:elective3project/screens/payment_screen.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
@@ -89,6 +90,59 @@ class _GuestDetailsScreenState extends State<GuestDetailsScreen> {
       }
     }
     return null;
+  }
+
+  void _showPrivacyPolicy() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return Dialog(
+          child: Stack(
+            children: <Widget>[
+              Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: const [
+                      SizedBox(height: 40),
+                      Text(
+                        'Privacy Policy',
+                        style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                      ),
+                      SizedBox(height: 16),
+                      Text(
+                        '''
+Your privacy policy content goes here.
+
+1. Information We Collect
+...
+2. How We Use Your Information
+...
+3. Information Sharing and Disclosure
+...
+                        ''',
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              Positioned(
+                right: 0.0,
+                top: 0.0,
+                child: IconButton(
+                  icon: const Icon(Icons.close),
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                  },
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
   }
 
   @override
@@ -281,8 +335,27 @@ class _GuestDetailsScreenState extends State<GuestDetailsScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: <Widget>[
                         CheckboxListTile(
-                          title: const Text(
-                              'I confirm that I have read, understood, and agree to the FlyQuest Privacy Policy. I Consent to the collection, use, processing and sharing of my personal information in accordance therewith'),
+                          title: RichText(
+                            text: TextSpan(
+                              style: Theme.of(context).textTheme.bodyMedium,
+                              children: <TextSpan>[
+                                const TextSpan(
+                                    text: 'I confirm that I have read, understood, and agree to the '),
+                                TextSpan(
+                                    text: 'FlyQuest Privacy Policy',
+                                    style: const TextStyle(
+                                      color: Colors.blue,
+                                      decoration: TextDecoration.underline,
+                                    ),
+                                    recognizer: TapGestureRecognizer()
+                                      ..onTap = () {
+                                        _showPrivacyPolicy();
+                                      }),
+                                const TextSpan(
+                                    text: '. I Consent to the collection, use, processing and sharing of my personal information.'),
+                              ],
+                            ),
+                          ),
                           value: _agreedToPolicy,
                           onChanged: (value) {
                             setState(() {

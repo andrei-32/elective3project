@@ -197,6 +197,14 @@ class _BookingTabState extends State<BookingTab> {
     );
   }
 
+  void _showPassengerLimitWarning() {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('You have reach the maximum number of passengers. Please read are FAQ and Information section for more info'),
+      ),
+    );
+  }
+
   void _searchFlights() {
     if (!_formKey.currentState!.validate()) {
       return;
@@ -335,9 +343,27 @@ class _BookingTabState extends State<BookingTab> {
 
                 const SizedBox(height: 24.0),
                 const Text('Passengers', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                PassengerCounter(label: 'Adults', count: _adults, onChanged: (count) => setState(() => _adults = count >= 1 ? count : 1)),
-                PassengerCounter(label: 'Children', count: _children, onChanged: (count) => setState(() => _children = count >= 0 ? count : 0)),
-                PassengerCounter(label: 'Infants', count: _infants, onChanged: (count) => setState(() => _infants = count >= 0 ? count : 0)),
+                PassengerCounter(label: 'Adults', count: _adults, onChanged: (count) {
+                  if (count + _children > 9) {
+                    _showPassengerLimitWarning();
+                  } else {
+                    setState(() => _adults = count >= 1 ? count : 1);
+                  }
+                }),
+                PassengerCounter(label: 'Children', count: _children, onChanged: (count) {
+                  if (_adults + count > 9) {
+                    _showPassengerLimitWarning();
+                  } else {
+                    setState(() => _children = count >= 0 ? count : 0);
+                  }
+                }),
+                PassengerCounter(label: 'Infants', count: _infants, onChanged: (count) {
+                  if (count > 1) {
+                    _showPassengerLimitWarning();
+                  } else {
+                    setState(() => _infants = count >= 0 ? count : 0);
+                  }
+                }),
                 const SizedBox(height: 24.0),
                 DropdownButtonFormField<String>(
                   initialValue: _flightClass,

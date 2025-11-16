@@ -100,7 +100,12 @@ class _FlightResultsScreenState extends State<FlightResultsScreen> {
     for (int i = -5; i <= 5; i++) {
       final date = centerDate.add(Duration(days: i));
       double? price = await dbHelper.getDailyPrice(date, dest);
-      dates.add({'date': date, 'price': price == -1.0 ? null : price});
+       if (price == null) {
+        // If no price, generate a random one and save it
+        price = 1500 + _random.nextDouble() * 8000;
+        await dbHelper.saveDailyPrice(date, dest, price);
+      }
+      dates.add({'date': date, 'price': price});
     }
     return dates;
   }
@@ -115,18 +120,8 @@ class _FlightResultsScreenState extends State<FlightResultsScreen> {
     
     final dest = _currentSelectionMode == 'flight2' ? widget.destination2! : widget.destination;
 
-    final dateInfo = _dates.firstWhere(
-      (d) => (d['date'] as DateTime).isAtSameMomentAs(date),
-      orElse: () => {'price': null},
-    );
-
-    if (dateInfo['price'] == null) {
-      if (mounted) setState(() => _isFlightLoading = false);
-      return;
-    }
-
-    List<Map<String, dynamic>> flightsForUi = [];
     var flightsFromDb = await dbHelper.getFlights(date, dest);
+    List<Map<String, dynamic>> flightsForUi;
 
     if (flightsFromDb.isNotEmpty) {
       flightsForUi = flightsFromDb.map((dbFlight) {
@@ -142,6 +137,7 @@ class _FlightResultsScreenState extends State<FlightResultsScreen> {
         }
       }).where((flight) => flight != null).cast<Map<String, dynamic>>().toList();
     } else {
+      // Generate and save flights if none are in the DB
       flightsForUi = List.generate(5, (index) {
         final int startHour = _random.nextInt(20) + 4;
         final int startMinute = _random.nextInt(60);
@@ -301,7 +297,7 @@ class _FlightResultsScreenState extends State<FlightResultsScreen> {
               child: _isFlightLoading
                   ? const Center(child: CircularProgressIndicator())
                   : _flights.isEmpty
-                      ? const Center(child: Text('No flights available for this date.', style: TextStyle(fontSize: 16, color: Colors.grey), textAlign: TextAlign.center))
+                      ? const Center(child: Text('No flights available for this date. Please try another date.', style: TextStyle(fontSize: 16, color: Colors.grey), textAlign: TextAlign.center))
                       : ListView.builder(
                           padding: const EdgeInsets.symmetric(horizontal: 8.0),
                           itemCount: _flights.length,
