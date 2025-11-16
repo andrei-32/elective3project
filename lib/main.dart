@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:elective3project/services/storage_service.dart';
+import 'package:elective3project/database/database_helper.dart';
 import 'package:elective3project/screens/admin_home_screen.dart';
 import 'package:elective3project/screens/flight_details_screen.dart';
 import 'screens/login_screen.dart';
@@ -10,8 +10,13 @@ import 'screens/splash_screen.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Initialize storage service (works for both web and mobile)
-  await StorageService.init();
+  // Initialize database
+  try {
+    final db = DatabaseHelper();
+    await db.database; // Trigger database initialization
+  } catch (e) {
+    print('Database initialization error: $e');
+  }
 
   runApp(const MainApp());
 }
