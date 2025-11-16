@@ -1,9 +1,11 @@
 import 'package:elective3project/screens/admin_home_screen.dart';
 import 'package:elective3project/screens/flight_details_screen.dart';
+import 'package:elective3project/screens/profile_screen.dart'; // Import the new profile screen
+import 'package:elective3project/screens/my_calendar_screen.dart';
+import 'package:elective3project/screens/home_screen.dart';
 import 'package:flutter/material.dart';
 import 'screens/login_screen.dart';
 import 'screens/registration_screen.dart';
-import 'screens/home_screen.dart';
 import 'screens/splash_screen.dart'; // Import the new splash screen
 
 void main() {
@@ -22,6 +24,7 @@ class MainApp extends StatelessWidget {
     return MaterialApp(
       title: 'FlyQuest',
       theme: ThemeData(
+        useMaterial3: true, // Recommended for modern Flutter apps
         primaryColor: navyBlue,
         colorScheme: const ColorScheme.light(
           primary: navyBlue,
@@ -61,13 +64,25 @@ class MainApp extends StatelessWidget {
       // Set the splash screen as the initial route
       initialRoute: '/',
       routes: {
-        '/': (context) => const SplashScreen(), // The app will start here
+        '/': (context) => const SplashScreen(),
+        // The app will start here
         '/login': (context) => const LoginScreen(),
         '/registration': (context) => const RegistrationScreen(),
         '/home': (context) => const HomeScreen(),
         '/flight_details': (context) => const FlightDetailsScreen(),
         '/admin_home': (context) => const AdminHomeScreen(),
-      },
+        '/profile': (context) => const ProfileScreen(),
+        // Add the new profile route
+        '/holidays': (context) {
+          // Get arguments passed during navigation
+          final userId = ModalRoute
+              .of(context)!
+              .settings
+              .arguments as int?;
+          // Pass the userId to the screen's constructor
+          return MyCalendarScreen(userId: userId);
+        },
+      }
     );
   }
 }

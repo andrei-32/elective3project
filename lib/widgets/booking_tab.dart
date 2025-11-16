@@ -1,13 +1,17 @@
 import 'package:elective3project/screens/flight_results_screen.dart';
 import 'package:elective3project/widgets/passenger_counter.dart';
 import 'package:flutter/material.dart';
+import 'package:elective3project/database/database_helper.dart';
+
 
 class BookingTab extends StatefulWidget {
   final String? initialDestination;
+  final int? userId;
 
   const BookingTab({
     super.key,
     this.initialDestination,
+    required this.userId,
   });
 
   @override
