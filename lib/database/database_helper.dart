@@ -1,7 +1,7 @@
-import 'package:elective3project/models/booking.dart';
-import 'package:elective3project/models/user.dart'; 
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
+import '../models/booking.dart';
+import '../models/user.dart';
 
 class DatabaseHelper {
   static final DatabaseHelper _instance = DatabaseHelper._internal();
@@ -9,8 +9,8 @@ class DatabaseHelper {
   DatabaseHelper._internal();
 
   static Database? _database;
-  static const _dbName = 'flight_booking.db';
-  static const _dbVersion = 7; // Incremented version
+  static const String _dbName = 'flight_booking.db';
+  static const int _dbVersion = 8; // <-- Incremented version
 
   Future<Database> get database async {
     if (_database != null) return _database!;
@@ -44,9 +44,6 @@ class DatabaseHelper {
     }
     if (oldVersion < 3) {
       await _createFlightTables(db);
-       await db.execute('ALTER TABLE users ADD COLUMN address TEXT');
-      await db.execute('ALTER TABLE users ADD COLUMN gender TEXT');
-      await db.execute('ALTER TABLE users ADD COLUMN birthday TEXT');
     }
     if (oldVersion < 4) {
       await db.execute('DROP TABLE IF EXISTS bookings');
@@ -62,13 +59,12 @@ class DatabaseHelper {
       );
     }
     if (oldVersion < 7) {
-      await db.execute('ALTER TABLE bookings ADD COLUMN flight_date TEXT');
-      await db.execute('ALTER TABLE bookings ADD COLUMN departureTime TEXT');
-      await db.execute('ALTER TABLE bookings ADD COLUMN arrivalTime TEXT');
-      await db.execute('ALTER TABLE bookings ADD COLUMN adults INTEGER');
-      await db.execute('ALTER TABLE bookings ADD COLUMN children INTEGER');
-      await db.execute('ALTER TABLE bookings ADD COLUMN infants INTEGER');
-      await db.execute('ALTER TABLE bookings ADD COLUMN flightClass TEXT');
+      // Clear all data for version 7
+      await db.delete('bookings');
+      await db.delete('users');
+    }
+    if (oldVersion < 8) {
+      // Add any new migrations for version 8
     }
   }
 
@@ -76,12 +72,9 @@ class DatabaseHelper {
     await db.execute('''
       CREATE TABLE users(
         id INTEGER PRIMARY KEY AUTOINCREMENT,
-        username TEXT NOT NULL,
+        username TEXT NOT NULL UNIQUE,
         email TEXT NOT NULL UNIQUE,
-        password TEXT NOT NULL,
-        address TEXT,
-        gender TEXT,
-        birthday TEXT
+        password TEXT NOT NULL
       )
     ''');
   }
@@ -101,20 +94,13 @@ class DatabaseHelper {
         tripType TEXT NOT NULL,
         guestFirstName TEXT NOT NULL,
         guestLastName TEXT NOT NULL,
-        departureFlightDetails TEXT NOT NULL, 
-        returnFlightDetails TEXT, 
+        departureFlightDetails TEXT NOT NULL, -- JSON String
+        returnFlightDetails TEXT, -- JSON String
         selectedBundle TEXT NOT NULL,
         totalPrice REAL NOT NULL,
         paymentMethod TEXT NOT NULL,
-        status TEXT NOT NULL, 
-        cancellationReason TEXT,
-        flight_date TEXT,
-        departureTime TEXT,
-        arrivalTime TEXT,
-        adults INTEGER,
-        children INTEGER,
-        infants INTEGER,
-        flightClass TEXT,
+        status TEXT NOT NULL, -- e.g., 'Confirmed', 'Cancelled'
+        cancellationReason TEXT, -- New column
         FOREIGN KEY (userId) REFERENCES users (id)
       )
     ''');
@@ -143,12 +129,13 @@ class DatabaseHelper {
     ''');
   }
 
+  // --- User Methods ---
   Future<int> insertUser(User user) async {
     final db = await database;
     return await db.insert('users', user.toMap());
   }
 
-  Future<User?> getUserByCredentials(String username, String password) async {
+  Future<User?> getUser(String username, String password) async {
     final db = await database;
     final List<Map<String, dynamic>> maps = await db.query(
       'users',
@@ -157,35 +144,10 @@ class DatabaseHelper {
     );
 
     if (maps.isNotEmpty) {
-      return User.fromMap(maps.first);
+      return User.fromMap(maps[0]);
     }
     return null;
   }
-
-  Future<User?> getUser(int id) async {
-    final db = await database;
-    final List<Map<String, dynamic>> maps = await db.query(
-      'users',
-      where: 'id = ?',
-      whereArgs: [id],
-    );
-    if (maps.isNotEmpty) {
-      return User.fromMap(maps.first);
-    }
-    return null;
-  }
-
-  Future<void> updateUserField(int userId, String column, String value) async {
-    final db = await database;
-    await db.update(
-      'users',
-      {column: value},
-      where: 'id = ?',
-      whereArgs: [userId],
-    );
-  }
-
-
 
   Future<User?> getUserByUsername(String username) async {
     final db = await database;
@@ -193,6 +155,35 @@ class DatabaseHelper {
       'users',
       where: 'username = ?',
       whereArgs: [username],
+    );
+
+    if (maps.isNotEmpty) {
+      return User.fromMap(maps[0]);
+    }
+    return null;
+  }
+
+  Future<User?> getUserByEmail(String email) async {
+    final db = await database;
+    final List<Map<String, dynamic>> maps = await db.query(
+      'users',
+      where: 'email = ?',
+      whereArgs: [email],
+    );
+
+    if (maps.isNotEmpty) {
+      return User.fromMap(maps[0]);
+    }
+    return null;
+  }
+
+  // NEW METHOD: Get user by ID
+  Future<User?> getUserById(int userId) async {
+    final db = await database;
+    final List<Map<String, dynamic>> maps = await db.query(
+      'users',
+      where: 'id = ?',
+      whereArgs: [userId],
     );
 
     if (maps.isNotEmpty) {
@@ -220,9 +211,25 @@ class DatabaseHelper {
     );
   }
 
-  Future<int> insertBooking(Booking booking, int userId) async {
+  // --- Booking Methods ---
+  Future<int> insertBooking(Booking booking) async {
     final db = await database;
-    return await db.insert('bookings', booking.toMap(userId));
+    return await db.insert('bookings', booking.toMap());
+  }
+
+  // NEW METHOD: Get booking by reference
+  Future<Booking?> getBookingByReference(String bookingReference) async {
+    final db = await database;
+    final List<Map<String, dynamic>> maps = await db.query(
+      'bookings',
+      where: 'bookingReference = ?',
+      whereArgs: [bookingReference],
+    );
+
+    if (maps.isNotEmpty) {
+      return Booking.fromMap(maps[0]);
+    }
+    return null;
   }
 
   Future<List<Booking>> getBookings(int userId) async {
@@ -271,6 +278,7 @@ class DatabaseHelper {
     );
   }
 
+  // --- Flight Data Methods ---
   Future<double?> getDailyPrice(DateTime date, String destination) async {
     final db = await database;
     final dateString = date.toIso8601String().split('T')[0];
@@ -333,5 +341,11 @@ class DatabaseHelper {
       });
     }
     await batch.commit(noResult: true);
+  }
+
+  Future<void> clearDatabase() async {
+    final db = await database;
+    await db.delete('bookings');
+    await db.delete('users');
   }
 }

@@ -9,13 +9,13 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  table_calendar: ^3.0.9
-  http: ^1.2.1
-  intl: ^0.20.2 # Often needed for date formatting
   sqflite: ^2.3.3
   path: ^1.9.0
-  mailer: ^6.1.0
+  intl: ^0.20.2
+  mailer: ^7.0.2 
   shared_preferences: ^2.2.2
+
+
 
 dev_dependencies:
   flutter_test:
