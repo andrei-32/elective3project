@@ -1,23 +1,21 @@
+import 'dart:convert';
+import 'package:elective3project/models/booking.dart';
 import 'package:flutter/material.dart';
-import 'package:elective3project/models/flight.dart';
 
 class SchedulesTab extends StatelessWidget {
-  const SchedulesTab({super.key});
+  final List<Booking> bookedFlights;
+
+  const SchedulesTab({super.key, required this.bookedFlights});
 
   @override
   Widget build(BuildContext context) {
-    final List<Flight> flights = [
-      Flight(destination: 'Japan', departureTime: '10:00 AM', arrivalTime: '03:00 PM'),
-      Flight(destination: 'South Korea', departureTime: '12:00 PM', arrivalTime: '05:00 PM'),
-      Flight(destination: 'Singapore', departureTime: '02:00 PM', arrivalTime: '07:00 PM'),
-      Flight(destination: 'Thailand', departureTime: '04:00 PM', arrivalTime: '09:00 PM'),
-    ];
-
     return ListView.builder(
       padding: const EdgeInsets.all(8.0),
-      itemCount: flights.length,
+      itemCount: bookedFlights.length,
       itemBuilder: (context, index) {
-        final flight = flights[index];
+        final booking = bookedFlights[index];
+        final departureDetails = json.decode(booking.departureFlightDetails);
+
         return Card(
           elevation: 4.0,
           margin: const EdgeInsets.symmetric(vertical: 8.0),
@@ -26,12 +24,34 @@ class SchedulesTab extends StatelessWidget {
           ),
           child: ListTile(
             leading: const Icon(Icons.flight, color: Colors.blue),
-            title: Text(flight.destination, style: const TextStyle(fontWeight: FontWeight.bold)),
-            subtitle: Text('Departs: ${flight.departureTime} - Arrives: ${flight.arrivalTime}'),
-            trailing: const Icon(Icons.arrow_forward_ios),
+            title: Text('${booking.origin} to ${booking.destination}',
+                style: const TextStyle(fontWeight: FontWeight.bold)),
+            subtitle: Text(
+                'Departs: ${departureDetails['departureTime']} - Arrives: ${departureDetails['arrivalTime']}'),
+            trailing: Text(booking.status,
+                style: TextStyle(
+                    color: _getStatusColor(booking.status),
+                    fontWeight: FontWeight.bold)),
           ),
         );
       },
     );
+  }
+
+  Color _getStatusColor(String status) {
+    switch (status) {
+      case 'Scheduled':
+        return Colors.blue;
+      case 'Confirmed':
+        return Colors.green;
+      case 'On Time':
+        return Colors.green;
+      case 'Delayed':
+        return Colors.orange;
+      case 'Cancelled':
+        return Colors.red;
+      default:
+        return Colors.grey;
+    }
   }
 }

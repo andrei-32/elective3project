@@ -1,11 +1,10 @@
 import 'package:elective3project/database/database_helper.dart';
-import 'package:elective3project/widgets/summary_flights_tab.dart';
+import 'package:elective3project/widgets/available_flights_tab.dart';
 import 'package:flutter/material.dart';
 import 'package:elective3project/widgets/booking_tab.dart';
-import 'package:elective3project/widgets/schedules_tab.dart';
 import 'package:elective3project/widgets/booked_flights_tab.dart';
 import 'package:elective3project/models/booking.dart';
-import 'package:elective3project/widgets/profile_tab.dart'; // Import the new ProfileTab
+import 'package:elective3project/widgets/profile_tab.dart';
 
 // This is the StatefulWidget declaration.
 class HomeScreen extends StatefulWidget {
@@ -149,19 +148,16 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
-    // This ensures we get the arguments (like userId) after the first frame is built.
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      // Check if arguments were passed to this screen (e.g., from login).
       final args = ModalRoute.of(context)!.settings.arguments;
       if (args is int) {
         if (mounted) {
           setState(() {
             _userId = args;
-            _loadBookings(); // Load bookings for this user.
+            _loadBookings();
           });
         }
       } else {
-        // Fallback or default user if no ID is passed
         setState((){
           _userId = 1;
           _loadBookings();
@@ -170,7 +166,6 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
-  // Fetches bookings from the database using the user ID.
   Future<void> _loadBookings() async {
     if (_userId != null) {
       final db = DatabaseHelper();
@@ -183,13 +178,11 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  // Handles tapping on the bottom navigation bar items.
   void _onItemTapped(int index) {
     setState(() {
       _selectedIndex = index;
-      _initialDestination = null; // Reset destination when manually changing tabs
+      _initialDestination = null;
     });
-    // If the 'My Bookings' tab is selected, refresh the bookings list.
     if (index == 3) {
       _loadBookings();
     }
@@ -197,14 +190,11 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Define your widget options list directly inside the build method.
-    // This ensures they receive the updated `_userId`.
     final List<Widget> _widgetOptions = <Widget>[
       _homeTab,
       BookingTab(initialDestination: _initialDestination, userId: _userId),
-      const SchedulesTab(),
+      const AvailableFlightsTab(),
       BookedFlightsTab(bookedFlights: _bookedFlights, onRefresh: _loadBookings),
-      SummaryFlightsTab(bookedFlights: _bookedFlights, onRefresh: _loadBookings), 
       ProfileTab(userId: _userId),
     ];
 
@@ -218,7 +208,7 @@ class _HomeScreenState extends State<HomeScreen> {
           padding: const EdgeInsets.all(8.0),
           child: Image.asset('assets/images/logo.png'),
         ),
-        automaticallyImplyLeading: false, // Prevents a back button from appearing
+        automaticallyImplyLeading: false,
       ),
       body: Center(
         child: _widgetOptions.elementAt(_selectedIndex),
@@ -230,7 +220,6 @@ class _HomeScreenState extends State<HomeScreen> {
           BottomNavigationBarItem(icon: Icon(Icons.flight), label: 'Book Flight'),
           BottomNavigationBarItem(icon: Icon(Icons.schedule), label: 'Schedules'),
           BottomNavigationBarItem(icon: Icon(Icons.bookmark), label: 'My Bookings'),
-          BottomNavigationBarItem(icon: Icon(Icons.book), label: 'Summary Flights'),
           BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profile'),
         ],
         currentIndex: _selectedIndex,
@@ -239,7 +228,6 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // Helper method to get the correct AppBar title for each tab.
   String _getAppBarTitle(int index) {
     switch (index) {
       case 0:
@@ -251,8 +239,6 @@ class _HomeScreenState extends State<HomeScreen> {
       case 3:
         return 'MY BOOKINGS';
       case 4:
-        return 'SUMMARY FLIGHTS';
-      case 5:
         return 'PROFILE & SETTINGS';
       default:
         return 'FLYQUEST';
