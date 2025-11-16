@@ -3,6 +3,7 @@ import 'dart:math';
 
 import 'package:elective3project/models/booking.dart';
 import 'package:elective3project/screens/booking_confirmation_screen.dart';
+import 'package:elective3project/services/email_service.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
@@ -90,8 +91,10 @@ class _PaymentScreenState extends State<PaymentScreen> {
   }
 
   Future<void> _processPayment() async {
-    if (_selectedPaymentMethod == 'Card' || _selectedPaymentMethod == 'E-wallet' || _selectedPaymentMethod == 'Bank Transfer') {
-        if (!_formKey.currentState!.validate()) {
+    if (_selectedPaymentMethod == 'Card' ||
+        _selectedPaymentMethod == 'E-wallet' ||
+        _selectedPaymentMethod == 'Bank Transfer') {
+      if (!_formKey.currentState!.validate()) {
         return;
       }
     }
@@ -104,11 +107,12 @@ class _PaymentScreenState extends State<PaymentScreen> {
       // Simulate network delay
       await Future.delayed(const Duration(seconds: 2));
 
-      final bool isPaymentSuccess = true; 
+      final bool isPaymentSuccess = true;
 
       if (isPaymentSuccess) {
         final dbHelper = DatabaseHelper();
-        final bookingReference = 'CEB${Random().nextInt(999999).toString().padLeft(6, '0')}';
+        final bookingReference =
+            'CEB${Random().nextInt(999999).toString().padLeft(6, '0')}';
 
         String finalPaymentMethod = _selectedPaymentMethod;
         if (_selectedPaymentMethod == 'E-wallet') {
@@ -116,7 +120,9 @@ class _PaymentScreenState extends State<PaymentScreen> {
         }
 
         // --- FIX: Convert DateTime objects in flight details to String before encoding ---
-        final departureFlightDetailsEncodable = Map<String, dynamic>.from(widget.departureFlight);
+        final departureFlightDetailsEncodable = Map<String, dynamic>.from(
+          widget.departureFlight,
+        );
         departureFlightDetailsEncodable.updateAll((key, value) {
           if (value is DateTime) {
             return value.toIso8601String();
@@ -126,8 +132,10 @@ class _PaymentScreenState extends State<PaymentScreen> {
 
         Map<String, dynamic>? returnFlightDetailsEncodable;
         if (widget.returnFlight != null) {
-          returnFlightDetailsEncodable = Map<String, dynamic>.from(widget.returnFlight!);
-           returnFlightDetailsEncodable.updateAll((key, value) {
+          returnFlightDetailsEncodable = Map<String, dynamic>.from(
+            widget.returnFlight!,
+          );
+          returnFlightDetailsEncodable.updateAll((key, value) {
             if (value is DateTime) {
               return value.toIso8601String();
             }
@@ -135,7 +143,6 @@ class _PaymentScreenState extends State<PaymentScreen> {
           });
         }
         // --- END FIX ---
-
 
         final newBooking = Booking(
           bookingReference: bookingReference,
@@ -149,8 +156,12 @@ class _PaymentScreenState extends State<PaymentScreen> {
           tripType: widget.tripType,
           guestFirstName: widget.firstName,
           guestLastName: widget.lastName,
-          departureFlightDetails: jsonEncode(departureFlightDetailsEncodable), // Use the fixed map
-          returnFlightDetails: returnFlightDetailsEncodable != null ? jsonEncode(returnFlightDetailsEncodable) : null, // Use the fixed map
+          departureFlightDetails: jsonEncode(
+            departureFlightDetailsEncodable,
+          ), // Use the fixed map
+          returnFlightDetails: returnFlightDetailsEncodable != null
+              ? jsonEncode(returnFlightDetailsEncodable)
+              : null, // Use the fixed map
           selectedBundle: widget.selectedBundle,
           totalPrice: widget.bundlePrice,
           paymentMethod: finalPaymentMethod,
@@ -160,19 +171,45 @@ class _PaymentScreenState extends State<PaymentScreen> {
         // Save to database
         await dbHelper.insertBooking(newBooking);
 
-        // Navigate on success
-        if (mounted) {
-           Navigator.of(context).pushAndRemoveUntil(
-            MaterialPageRoute(
-              builder: (context) => BookingConfirmationScreen(
-                booking: newBooking,
-              ),
-            ),
-            (Route<dynamic> route) => false, 
+        // Send booking confirmation email
+        final dateFormat = DateFormat('MMM d, yyyy');
+        String departureStr = dateFormat.format(newBooking.departureDate);
+        String? returnStr = newBooking.returnDate != null
+            ? dateFormat.format(newBooking.returnDate!)
+            : null;
+
+        final emailResult = await EmailService.sendBookingConfirmationEmail(
+          recipientEmail: widget.email,
+          recipientName: '${widget.firstName} ${widget.lastName}',
+          bookingReference: newBooking.bookingReference,
+          origin: widget.origin,
+          destination: widget.destination,
+          departureDate: departureStr,
+          returnDate: returnStr,
+          guestName: '${widget.firstName} ${widget.lastName}',
+          tripType: widget.tripType,
+          selectedBundle: widget.selectedBundle,
+          totalPrice: widget.bundlePrice,
+          paymentMethod: finalPaymentMethod,
+        );
+
+        if (emailResult['success'] != true) {
+          print(
+            'Warning: Booking confirmation email failed to send: ${emailResult['error']}',
           );
         }
-      } 
-      
+
+        // Navigate on success
+        if (mounted) {
+          Navigator.of(context).pushAndRemoveUntil(
+            MaterialPageRoute(
+              builder: (context) =>
+                  BookingConfirmationScreen(booking: newBooking),
+            ),
+            (Route<dynamic> route) => false,
+          );
+        }
+      }
     } catch (e) {
       setState(() {
         _isProcessing = false;
@@ -194,7 +231,6 @@ class _PaymentScreenState extends State<PaymentScreen> {
     }
   }
 
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -214,8 +250,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
             children: [
               _buildPaymentMethodSelector(),
               const SizedBox(height: 24),
-              if (_selectedPaymentMethod == 'Card')
-                _buildCardDetailsForm(),
+              if (_selectedPaymentMethod == 'Card') _buildCardDetailsForm(),
               if (_selectedPaymentMethod == 'E-wallet')
                 _buildEWalletDetailsForm(),
               if (_selectedPaymentMethod == 'Bank Transfer')
@@ -241,7 +276,9 @@ class _PaymentScreenState extends State<PaymentScreen> {
           children: [
             Text(
               'Select Payment Method',
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+              style: Theme.of(
+                context,
+              ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),
             _buildPaymentOption('Card', Icons.credit_card),
@@ -277,7 +314,9 @@ class _PaymentScreenState extends State<PaymentScreen> {
           children: [
             Text(
               'Enter Card Details',
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+              style: Theme.of(
+                context,
+              ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 16),
             TextFormField(
@@ -288,7 +327,10 @@ class _PaymentScreenState extends State<PaymentScreen> {
                 prefixIcon: Icon(Icons.credit_card),
               ),
               keyboardType: TextInputType.number,
-              validator: (value) => (value == null || value.isEmpty || value.length < 16) ? 'Enter a valid card number' : null,
+              validator: (value) =>
+                  (value == null || value.isEmpty || value.length < 16)
+                  ? 'Enter a valid card number'
+                  : null,
             ),
             const SizedBox(height: 12),
             Row(
@@ -301,7 +343,8 @@ class _PaymentScreenState extends State<PaymentScreen> {
                       border: OutlineInputBorder(),
                     ),
                     keyboardType: TextInputType.datetime,
-                    validator: (value) => (value == null || value.isEmpty) ? 'Required' : null,
+                    validator: (value) =>
+                        (value == null || value.isEmpty) ? 'Required' : null,
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -314,7 +357,10 @@ class _PaymentScreenState extends State<PaymentScreen> {
                     ),
                     keyboardType: TextInputType.number,
                     obscureText: true,
-                    validator: (value) => (value == null || value.isEmpty || value.length < 3) ? 'Required' : null,
+                    validator: (value) =>
+                        (value == null || value.isEmpty || value.length < 3)
+                        ? 'Required'
+                        : null,
                   ),
                 ),
               ],
@@ -348,7 +394,9 @@ class _PaymentScreenState extends State<PaymentScreen> {
           children: [
             Text(
               'Account Details',
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+              style: Theme.of(
+                context,
+              ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 16),
             Row(
@@ -379,7 +427,9 @@ class _PaymentScreenState extends State<PaymentScreen> {
                 border: OutlineInputBorder(),
                 prefixIcon: Icon(Icons.person),
               ),
-              validator: (value) => (value == null || value.isEmpty) ? 'Please enter your name' : null,
+              validator: (value) => (value == null || value.isEmpty)
+                  ? 'Please enter your name'
+                  : null,
             ),
             const SizedBox(height: 12),
             TextFormField(
@@ -390,7 +440,9 @@ class _PaymentScreenState extends State<PaymentScreen> {
                 prefixIcon: Icon(Icons.phone),
               ),
               keyboardType: TextInputType.phone,
-              validator: (value) => (value == null || value.isEmpty) ? 'Please enter your number' : null,
+              validator: (value) => (value == null || value.isEmpty)
+                  ? 'Please enter your number'
+                  : null,
             ),
           ],
         ),
@@ -409,7 +461,9 @@ class _PaymentScreenState extends State<PaymentScreen> {
           children: [
             Text(
               'Account Details',
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+              style: Theme.of(
+                context,
+              ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 16),
             TextFormField(
@@ -419,7 +473,9 @@ class _PaymentScreenState extends State<PaymentScreen> {
                 border: OutlineInputBorder(),
                 prefixIcon: Icon(Icons.person),
               ),
-               validator: (value) => (value == null || value.isEmpty) ? 'Please enter your account name' : null,
+              validator: (value) => (value == null || value.isEmpty)
+                  ? 'Please enter your account name'
+                  : null,
             ),
             const SizedBox(height: 12),
             TextFormField(
@@ -430,7 +486,9 @@ class _PaymentScreenState extends State<PaymentScreen> {
                 prefixIcon: Icon(Icons.confirmation_number),
               ),
               keyboardType: TextInputType.number,
-              validator: (value) => (value == null || value.isEmpty) ? 'Please enter your account number' : null,
+              validator: (value) => (value == null || value.isEmpty)
+                  ? 'Please enter your account number'
+                  : null,
             ),
           ],
         ),
@@ -443,11 +501,11 @@ class _PaymentScreenState extends State<PaymentScreen> {
   Widget _buildReviewAndConfirm() {
     final formatCurrency = NumberFormat.currency(locale: 'en_PH', symbol: '₱');
     final dateFormat = DateFormat('MMM d, yyyy');
-    
+
     String finalPaymentMethod = _selectedPaymentMethod;
-      if (_selectedPaymentMethod == 'E-wallet') {
-        finalPaymentMethod = 'E-wallet ($_selectedEWallet)';
-      }
+    if (_selectedPaymentMethod == 'E-wallet') {
+      finalPaymentMethod = 'E-wallet ($_selectedEWallet)';
+    }
 
     return Card(
       elevation: 2,
@@ -459,13 +517,21 @@ class _PaymentScreenState extends State<PaymentScreen> {
           children: [
             Text(
               'Review & Confirm',
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+              style: Theme.of(
+                context,
+              ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
             ),
             const Divider(height: 24),
-            Text('${widget.origin} to ${widget.destination}', style: Theme.of(context).textTheme.titleMedium),
+            Text(
+              '${widget.origin} to ${widget.destination}',
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
             Text(dateFormat.format(widget.departureDate)),
             const SizedBox(height: 16),
-            _buildReviewDetailRow('Passenger:', '${widget.title} ${widget.firstName} ${widget.lastName}'),
+            _buildReviewDetailRow(
+              'Passenger:',
+              '${widget.title} ${widget.firstName} ${widget.lastName}',
+            ),
             _buildReviewDetailRow('Bundle:', widget.selectedBundle),
             _buildReviewDetailRow('Payment Method:', finalPaymentMethod),
             const Divider(height: 24),
@@ -480,7 +546,11 @@ class _PaymentScreenState extends State<PaymentScreen> {
     );
   }
 
-  Widget _buildReviewDetailRow(String label, String value, {bool isTotal = false}) {
+  Widget _buildReviewDetailRow(
+    String label,
+    String value, {
+    bool isTotal = false,
+  }) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4.0),
       child: Row(
@@ -507,7 +577,11 @@ class _PaymentScreenState extends State<PaymentScreen> {
       decoration: const BoxDecoration(
         color: Colors.white,
         boxShadow: [
-          BoxShadow(color: Colors.black12, blurRadius: 10, offset: Offset(0, -2)),
+          BoxShadow(
+            color: Colors.black12,
+            blurRadius: 10,
+            offset: Offset(0, -2),
+          ),
         ],
       ),
       child: Row(
@@ -520,7 +594,10 @@ class _PaymentScreenState extends State<PaymentScreen> {
               const Text('Total', style: TextStyle(color: Colors.black54)),
               Text(
                 formatCurrency.format(widget.bundlePrice),
-                style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                style: const TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             ],
           ),
@@ -528,8 +605,13 @@ class _PaymentScreenState extends State<PaymentScreen> {
             onPressed: _isProcessing ? null : _processPayment,
             style: ElevatedButton.styleFrom(
               padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 16),
-              textStyle: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+              textStyle: const TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(30),
+              ),
             ),
             child: _isProcessing
                 ? const SizedBox(
