@@ -170,7 +170,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
         );
 
         // Save to database
-        await dbHelper.insertBooking(newBooking, 1);
+        await dbHelper.insertBooking(newBooking);
 
         // Send booking confirmation email
         final dateFormat = DateFormat('MMM d, yyyy');

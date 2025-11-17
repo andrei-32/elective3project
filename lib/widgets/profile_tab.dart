@@ -1,6 +1,7 @@
 import 'package:elective3project/database/database_helper.dart';
 import 'package:elective3project/models/user.dart';
 import 'package:elective3project/screens/edit_profile_screen.dart';
+import 'package:elective3project/screens/login_screen.dart';
 import 'package:flutter/material.dart';
 
 class ProfileTab extends StatefulWidget {
@@ -23,7 +24,7 @@ class _ProfileTabState extends State<ProfileTab> {
   Future<void> _loadUserData() async {
     if (widget.userId != null) {
       final db = DatabaseHelper();
-      final user = await db.getUser(widget.userId!);
+      final user = await db.getUserById(widget.userId!);
       if (mounted) {
         setState(() {
           _user = user;
@@ -140,6 +141,42 @@ class _ProfileTabState extends State<ProfileTab> {
           onTap: () {
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(content: Text('Navigate to Settings')),
+            );
+          },
+        ),
+        const Divider(height: 32.0),
+        ListTile(
+          leading: const Icon(Icons.logout, color: Colors.red),
+          title: const Text(
+            'Logout',
+            style: TextStyle(color: Colors.red),
+          ),
+          onTap: () {
+            showDialog(
+              context: context,
+              builder: (BuildContext context) {
+                return AlertDialog(
+                  title: const Text('Confirm Logout'),
+                  content: const Text('Are you sure you want to log out?'),
+                  actions: <Widget>[
+                    TextButton(
+                      onPressed: () {
+                        Navigator.of(context).pop(); // Close the dialog
+                      },
+                      child: const Text('Cancel'),
+                    ),
+                    TextButton(
+                      onPressed: () {
+                        Navigator.of(context).pushAndRemoveUntil(
+                          MaterialPageRoute(builder: (context) => const LoginScreen()),
+                          (Route<dynamic> route) => false,
+                        );
+                      },
+                      child: const Text('Logout', style: TextStyle(color: Colors.red)),
+                    ),
+                  ],
+                );
+              },
             );
           },
         ),

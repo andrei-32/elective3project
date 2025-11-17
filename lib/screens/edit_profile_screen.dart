@@ -19,13 +19,13 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   @override
   void initState() {
     super.initState();
-    _userFuture = db.getUser(widget.userId);
+    _userFuture = db.getUserById(widget.userId);
   }
 
   // Refreshes user data after an edit
   void _refreshUser() {
     setState(() {
-      _userFuture = db.getUser(widget.userId);
+      _userFuture = db.getUserById(widget.userId);
     });
   }
 
@@ -100,7 +100,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
           onPressed: () {
             // Placeholder for image picker functionality
             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Image upload functionality coming soon!')),
+              const SnackBar(content: Text('Image upload functionality coming soon!')), 
             );
           },
         ),
