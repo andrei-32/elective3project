@@ -1,6 +1,7 @@
 import 'package:elective3project/database/database_helper.dart';
 import 'package:elective3project/models/user.dart';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 
 class RegistrationScreen extends StatefulWidget {
   const RegistrationScreen({super.key});
@@ -11,17 +12,27 @@ class RegistrationScreen extends StatefulWidget {
 
 class _RegistrationScreenState extends State<RegistrationScreen> {
   final _formKey = GlobalKey<FormState>();
+  final _firstNameController = TextEditingController();
+  final _lastNameController = TextEditingController();
   final _usernameController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
+  final _addressController = TextEditingController();
+  final _dobController = TextEditingController();
+  DateTime? _selectedDob;
+  String? _selectedGender;
 
   @override
   void dispose() {
+    _firstNameController.dispose();
+    _lastNameController.dispose();
     _usernameController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
+    _addressController.dispose();
+    _dobController.dispose();
     super.dispose();
   }
 
@@ -61,6 +72,32 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                         ),
                       ),
                       const SizedBox(height: 32.0),
+                      TextFormField(
+                        controller: _firstNameController,
+                        decoration: const InputDecoration(
+                          labelText: 'First Name',
+                        ),
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return 'Please enter your first name';
+                          }
+                          return null;
+                        },
+                      ),
+                      const SizedBox(height: 16.0),
+                      TextFormField(
+                        controller: _lastNameController,
+                        decoration: const InputDecoration(
+                          labelText: 'Last Name',
+                        ),
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return 'Please enter your last name';
+                          }
+                          return null;
+                        },
+                      ),
+                      const SizedBox(height: 16.0),
                       TextFormField(
                         controller: _usernameController,
                         decoration: const InputDecoration(
@@ -118,6 +155,68 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                           return null;
                         },
                       ),
+                      const SizedBox(height: 16.0),
+                      TextFormField(
+                        controller: _addressController,
+                        decoration: const InputDecoration(
+                          labelText: 'Address',
+                        ),
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return 'Please enter your address';
+                          }
+                          return null;
+                        },
+                      ),
+                      const SizedBox(height: 16.0),
+                      DropdownButtonFormField<String>(
+                        value: _selectedGender,
+                        decoration: const InputDecoration(
+                          labelText: 'Gender',
+                        ),
+                        items: ['Male', 'Female', 'Other'].map((gender) {
+                          return DropdownMenuItem(value: gender, child: Text(gender));
+                        }).toList(),
+                        onChanged: (value) {
+                          setState(() {
+                            _selectedGender = value;
+                          });
+                        },
+                        validator: (value) {
+                          if (value == null) {
+                            return 'Please select your gender';
+                          }
+                          return null;
+                        },
+                      ),
+                      const SizedBox(height: 16.0),
+                      TextFormField(
+                        controller: _dobController,
+                        decoration: const InputDecoration(
+                          labelText: 'Date of Birth',
+                        ),
+                        readOnly: true,
+                        onTap: () async {
+                          final date = await showDatePicker(
+                            context: context,
+                            initialDate: DateTime.now(),
+                            firstDate: DateTime(1900),
+                            lastDate: DateTime.now(),
+                          );
+                          if (date != null) {
+                            setState(() {
+                              _selectedDob = date;
+                              _dobController.text = DateFormat.yMMMMd().format(date);
+                            });
+                          }
+                        },
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return 'Please select your date of birth';
+                          }
+                          return null;
+                        },
+                      ),
                       const SizedBox(height: 32.0),
                       SizedBox(
                         width: double.infinity,
@@ -126,9 +225,14 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                             if (_formKey.currentState!.validate()) {
                               try {
                                 final user = User(
+                                  firstName: _firstNameController.text.trim(),
+                                  lastName: _lastNameController.text.trim(),
                                   username: _usernameController.text.trim(),
                                   email: _emailController.text.trim(),
                                   password: _passwordController.text,
+                                  address: _addressController.text.trim(),
+                                  gender: _selectedGender!,
+                                  birthday: _selectedDob!,
                                 );
                                 final db = DatabaseHelper();
                                 await db.insertUser(user);

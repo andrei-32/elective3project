@@ -10,7 +10,7 @@ class DatabaseHelper {
 
   static Database? _database;
   static const String _dbName = 'flight_booking.db';
-  static const int _dbVersion = 9;
+  static const int _dbVersion = 10; // Incremented version
 
   Future<Database> get database async {
     if (_database != null) return _database!;
@@ -37,36 +37,22 @@ class DatabaseHelper {
   }
 
   Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
-    if (oldVersion < 2) {
-      await db.execute(
-        'ALTER TABLE bookings ADD COLUMN status TEXT NOT NULL DEFAULT \'\'Confirmed\'\'',
-      );
-    }
-    if (oldVersion < 3) {
-      await _createFlightTables(db);
-    }
-    if (oldVersion < 4) {
-      await db.execute('DROP TABLE IF EXISTS bookings');
-      await _createBookingsTable(db);
-    }
-    if (oldVersion < 5) {
-      await db.execute('ALTER TABLE bookings ADD COLUMN origin2 TEXT');
-      await db.execute('ALTER TABLE bookings ADD COLUMN destination2 TEXT');
-    }
-    if (oldVersion < 6) {
-      await db.execute(
-        'ALTER TABLE bookings ADD COLUMN cancellationReason TEXT',
-      );
-    }
-    if (oldVersion < 7) {
-      await db.delete('bookings');
-      await db.delete('users');
-    }
     if (oldVersion < 9) {
-      await db.execute('ALTER TABLE bookings ADD COLUMN adults INTEGER NOT NULL DEFAULT 1');
+       await db.execute('ALTER TABLE bookings ADD COLUMN adults INTEGER NOT NULL DEFAULT 1');
       await db.execute('ALTER TABLE bookings ADD COLUMN children INTEGER NOT NULL DEFAULT 0');
       await db.execute('ALTER TABLE bookings ADD COLUMN infants INTEGER NOT NULL DEFAULT 0');
       await db.execute('ALTER TABLE bookings ADD COLUMN flightClass TEXT NOT NULL DEFAULT \'Economy\'');
+    }
+    if (oldVersion < 10) {
+      // Add new columns for user details
+      await db.execute('ALTER TABLE users ADD COLUMN firstName TEXT NOT NULL DEFAULT \'\'');
+      await db.execute('ALTER TABLE users ADD COLUMN lastName TEXT NOT NULL DEFAULT \'\'');
+      
+      // For existing columns, we handle nulls carefully.
+      // These will be enforced at the app level for new users.
+      await db.execute('ALTER TABLE users ADD COLUMN address TEXT');
+      await db.execute('ALTER TABLE users ADD COLUMN gender TEXT');
+      await db.execute('ALTER TABLE users ADD COLUMN birthday TEXT');
     }
   }
 
@@ -74,12 +60,14 @@ class DatabaseHelper {
     await db.execute('''
       CREATE TABLE users(
         id INTEGER PRIMARY KEY AUTOINCREMENT,
+        firstName TEXT NOT NULL,
+        lastName TEXT NOT NULL,
         username TEXT NOT NULL UNIQUE,
         email TEXT NOT NULL UNIQUE,
         password TEXT NOT NULL,
-        address TEXT,
-        gender TEXT,
-        birthday TEXT
+        address TEXT NOT NULL,
+        gender TEXT NOT NULL,
+        birthday TEXT NOT NULL
       )
     ''');
   }
@@ -110,7 +98,7 @@ class DatabaseHelper {
         children INTEGER NOT NULL DEFAULT 0,
         infants INTEGER NOT NULL DEFAULT 0,
         flightClass TEXT NOT NULL DEFAULT 'Economy',
-        FOREIGN KEY (userId) REFERENCES users (id)
+        FOREIGN KEY (userId) REFERENCES users (id) ON DELETE CASCADE
       )
     ''');
   }

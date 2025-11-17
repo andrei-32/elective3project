@@ -94,14 +94,7 @@ class _PasswordResetScreenState extends State<PasswordResetScreen> {
       final db = DatabaseHelper();
 
       // Find user by email
-      final allUsers = await db.getAllUsers();
-      User? user;
-      for (var u in allUsers) {
-        if (u.email == widget.email) {
-          user = u;
-          break;
-        }
-      }
+      final user = await db.getUserByEmail(widget.email);
 
       if (user == null) {
         if (mounted) {
@@ -119,9 +112,14 @@ class _PasswordResetScreenState extends State<PasswordResetScreen> {
       // Update password in database
       final updatedUser = User(
         id: user.id,
+        firstName: user.firstName,
+        lastName: user.lastName,
         username: user.username,
         email: user.email,
         password: _passwordController.text,
+        address: user.address,
+        gender: user.gender,
+        birthday: user.birthday,
       );
 
       await db.updateUser(updatedUser);

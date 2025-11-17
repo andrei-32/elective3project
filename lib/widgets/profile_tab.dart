@@ -1,7 +1,10 @@
 import 'package:elective3project/database/database_helper.dart';
 import 'package:elective3project/models/user.dart';
+import 'package:elective3project/screens/contact_us_screen.dart';
 import 'package:elective3project/screens/edit_profile_screen.dart';
+import 'package:elective3project/screens/faq_screen.dart';
 import 'package:elective3project/screens/login_screen.dart';
+import 'package:elective3project/screens/terms_and_conditions_screen.dart';
 import 'package:flutter/material.dart';
 
 class ProfileTab extends StatefulWidget {
@@ -91,21 +94,12 @@ class _ProfileTabState extends State<ProfileTab> {
         ),
         _buildListTile(
           context,
-          icon: Icons.article_outlined,
-          title: 'News and Events',
-          onTap: () {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Navigate to News and Events')),
-            );
-          },
-        ),
-        _buildListTile(
-          context,
           icon: Icons.headset_mic_outlined,
           title: 'Contact Us',
           onTap: () {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Navigate to Contact Us')),
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const ContactUsScreen()),
             );
           },
         ),
@@ -118,8 +112,9 @@ class _ProfileTabState extends State<ProfileTab> {
           icon: Icons.description_outlined,
           title: 'Terms and Conditions',
           onTap: () {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Navigate to Terms and Conditions')),
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const TermsAndConditionsScreen()),
             );
           },
         ),
@@ -128,8 +123,9 @@ class _ProfileTabState extends State<ProfileTab> {
           icon: Icons.quiz_outlined,
           title: 'FAQs',
           onTap: () {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Navigate to FAQs')),
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const FaqScreen()),
             );
           },
         ),
@@ -214,7 +210,7 @@ class _ProfileTabState extends State<ProfileTab> {
           ),
         ),
         title: Text(
-          _user != null ? _user!.username : 'Loading...',
+          _user != null ? '${_user!.firstName} ${_user!.lastName}' : 'Loading...',
           style: const TextStyle(fontWeight: FontWeight.bold),
         ),
         subtitle: Text(_user != null ? _user!.email : '...'),

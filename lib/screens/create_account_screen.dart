@@ -1,7 +1,11 @@
+import 'dart:math';
 import 'package:elective3project/database/database_helper.dart';
 import 'package:elective3project/models/user.dart';
 import 'package:elective3project/screens/login_screen.dart';
+import 'package:elective3project/screens/verification_screen.dart';
+import 'package:elective3project/services/email_service.dart';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 
 class CreateAccountScreen extends StatefulWidget {
   const CreateAccountScreen({super.key});
@@ -12,39 +16,75 @@ class CreateAccountScreen extends StatefulWidget {
 
 class _CreateAccountScreenState extends State<CreateAccountScreen> {
   final _formKey = GlobalKey<FormState>();
+  final _firstNameController = TextEditingController();
+  final _lastNameController = TextEditingController();
   final _usernameController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
+  final _addressController = TextEditingController();
+  final _dobController = TextEditingController();
+  DateTime? _selectedDob;
+  String? _selectedGender;
   bool _isPasswordVisible = false;
+  bool _isCreatingAccount = false;
 
   @override
   void dispose() {
+    _firstNameController.dispose();
+    _lastNameController.dispose();
     _usernameController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
+    _addressController.dispose();
+    _dobController.dispose();
     super.dispose();
   }
 
   void _createAccount() async {
     if (_formKey.currentState!.validate()) {
-      final db = DatabaseHelper();
+      setState(() => _isCreatingAccount = true);
+
       final newUser = User(
+        firstName: _firstNameController.text,
+        lastName: _lastNameController.text,
         username: _usernameController.text,
         email: _emailController.text,
         password: _passwordController.text, // In a real app, hash this!
+        address: _addressController.text,
+        gender: _selectedGender!,
+        birthday: _selectedDob!,
       );
 
-      await db.insertUser(newUser);
+      final verificationCode = (100000 + Random().nextInt(900000)).toString();
 
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Account created successfully! Please log in.')),
-        );
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (context) => const LoginScreen()),
-        );
+      final emailResult = await EmailService.sendVerificationEmail(
+        newUser.email,
+        newUser.username,
+        verificationCode,
+      );
+
+      setState(() => _isCreatingAccount = false);
+
+      if (emailResult['success']) {
+        if (mounted) {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => VerificationScreen(
+                userToRegister: newUser,
+                verificationCode: verificationCode,
+              ),
+            ),
+          );
+        }
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Failed to send verification email: ${emailResult['error']}')),
+          );
+        }
       }
     }
   }
@@ -112,6 +152,24 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
       child: Column(
         children: [
           TextFormField(
+            controller: _firstNameController,
+            decoration: InputDecoration(
+              labelText: 'First Name',
+              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12.0)),
+            ),
+            validator: (value) => (value == null || value.isEmpty) ? 'Please enter your first name' : null,
+          ),
+          const SizedBox(height: 16.0),
+          TextFormField(
+            controller: _lastNameController,
+            decoration: InputDecoration(
+              labelText: 'Last Name',
+              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12.0)),
+            ),
+            validator: (value) => (value == null || value.isEmpty) ? 'Please enter your last name' : null,
+          ),
+          const SizedBox(height: 16.0),
+          TextFormField(
             controller: _usernameController,
             decoration: InputDecoration(
               labelText: 'Username',
@@ -120,12 +178,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                 borderRadius: BorderRadius.circular(12.0),
               ),
             ),
-            validator: (value) {
-              if (value == null || value.isEmpty) {
-                return 'Please enter a username';
-              }
-              return null;
-            },
+            validator: (value) => (value == null || value.isEmpty) ? 'Please enter a username' : null,
           ),
           const SizedBox(height: 16.0),
           TextFormField(
@@ -138,12 +191,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
               ),
             ),
             keyboardType: TextInputType.emailAddress,
-            validator: (value) {
-              if (value == null || value.isEmpty || !value.contains('@')) {
-                return 'Please enter a valid email';
-              }
-              return null;
-            },
+            validator: (value) => (value == null || !value.contains('@')) ? 'Please enter a valid email' : null,
           ),
           const SizedBox(height: 16.0),
           TextFormField(
@@ -152,26 +200,13 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
             decoration: InputDecoration(
               labelText: 'Password',
               prefixIcon: const Icon(Icons.lock_outline),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12.0),
-              ),
+              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12.0)),
               suffixIcon: IconButton(
-                icon: Icon(
-                  _isPasswordVisible ? Icons.visibility : Icons.visibility_off,
-                ),
-                onPressed: () {
-                  setState(() {
-                    _isPasswordVisible = !_isPasswordVisible;
-                  });
-                },
+                icon: Icon(_isPasswordVisible ? Icons.visibility : Icons.visibility_off),
+                onPressed: () => setState(() => _isPasswordVisible = !_isPasswordVisible),
               ),
             ),
-            validator: (value) {
-              if (value == null || value.isEmpty || value.length < 6) {
-                return 'Password must be at least 6 characters';
-              }
-              return null;
-            },
+            validator: (value) => (value == null || value.length < 6) ? 'Password must be at least 6 characters' : null,
           ),
           const SizedBox(height: 16.0),
           TextFormField(
@@ -180,16 +215,53 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
             decoration: InputDecoration(
               labelText: 'Confirm Password',
               prefixIcon: const Icon(Icons.lock_outline),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12.0),
-              ),
+              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12.0)),
             ),
-            validator: (value) {
-              if (value != _passwordController.text) {
-                return 'Passwords do not match';
+            validator: (value) => (value != _passwordController.text) ? 'Passwords do not match' : null,
+          ),
+          const SizedBox(height: 16.0),
+          TextFormField(
+            controller: _addressController,
+            decoration: InputDecoration(
+              labelText: 'Address',
+              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12.0)),
+            ),
+            validator: (value) => (value == null || value.isEmpty) ? 'Please enter your address' : null,
+          ),
+          const SizedBox(height: 16.0),
+          DropdownButtonFormField<String>(
+            value: _selectedGender,
+            decoration: InputDecoration(
+              labelText: 'Gender',
+              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12.0)),
+            ),
+            items: ['Male', 'Female', 'Other'].map((gender) => DropdownMenuItem(value: gender, child: Text(gender))).toList(),
+            onChanged: (value) => setState(() => _selectedGender = value),
+            validator: (value) => (value == null) ? 'Please select your gender' : null,
+          ),
+          const SizedBox(height: 16.0),
+          TextFormField(
+            controller: _dobController,
+            decoration: InputDecoration(
+              labelText: 'Date of Birth',
+              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12.0)),
+            ),
+            readOnly: true,
+            onTap: () async {
+              final date = await showDatePicker(
+                context: context,
+                initialDate: DateTime.now(),
+                firstDate: DateTime(1900),
+                lastDate: DateTime.now(),
+              );
+              if (date != null) {
+                setState(() {
+                  _selectedDob = date;
+                  _dobController.text = DateFormat.yMMMMd().format(date);
+                });
               }
-              return null;
             },
+            validator: (value) => (value == null || value.isEmpty) ? 'Please select your date of birth' : null,
           ),
         ],
       ),
@@ -198,7 +270,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
 
   Widget _buildCreateAccountButton() {
     return ElevatedButton(
-      onPressed: _createAccount,
+      onPressed: _isCreatingAccount ? null : _createAccount,
       style: ElevatedButton.styleFrom(
         padding: const EdgeInsets.symmetric(vertical: 16.0),
         shape: RoundedRectangleBorder(
@@ -206,10 +278,12 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
         ),
         backgroundColor: const Color(0xFF000080),
       ),
-      child: const Text(
-        'CREATE ACCOUNT',
-        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
-      ),
+      child: _isCreatingAccount
+          ? const CircularProgressIndicator(valueColor: AlwaysStoppedAnimation<Color>(Colors.white))
+          : const Text(
+              'CREATE ACCOUNT',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
+            ),
     );
   }
 
@@ -221,9 +295,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
         children: [
           const Text("Already have an account?"),
           TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-            },
+            onPressed: () => Navigator.pop(context),
             child: const Text(
               'Log In',
               style: TextStyle(

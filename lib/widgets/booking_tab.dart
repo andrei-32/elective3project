@@ -345,25 +345,28 @@ class _BookingTabState extends State<BookingTab> {
 
                 const SizedBox(height: 24.0),
                 const Text('Passengers', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                PassengerCounter(label: 'Adults', count: _adults, onChanged: (count) {
-                  if (count + _children > 9) {
-                    _showPassengerLimitWarning();
+                PassengerCounter(
+                  label: 'Adults',
+                  count: _adults,
+                  maxValue: 9 - _children,
+                  onChanged: (count) {
+                  if (count >= 1) {
+                    setState(() => _adults = count);
                   } else {
-                    setState(() => _adults = count >= 1 ? count : 1);
+                    setState(() => _adults = 1);
                   }
                 }),
-                PassengerCounter(label: 'Children', count: _children, onChanged: (count) {
-                  if (_adults + count > 9) {
-                    _showPassengerLimitWarning();
-                  } else {
-                    setState(() => _children = count >= 0 ? count : 0);
+                PassengerCounter(label: 'Children', 
+                count: _children, 
+                maxValue: 9 - _adults,
+                onChanged: (count) {
+                  if (count >= 0) {
+                    setState(() => _children = count);
                   }
                 }),
-                PassengerCounter(label: 'Infants', count: _infants, onChanged: (count) {
-                  if (count > 1) {
-                    _showPassengerLimitWarning();
-                  } else {
-                    setState(() => _infants = count >= 0 ? count : 0);
+                PassengerCounter(label: 'Infants', count: _infants, maxValue: 1, onChanged: (count) {
+                  if (count >= 0) {
+                    setState(() => _infants = count);
                   }
                 }),
                 const SizedBox(height: 24.0),

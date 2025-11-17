@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 class PassengerCounter extends StatelessWidget {
   final String label;
   final int count;
+  final int? maxValue;
   final ValueChanged<int> onChanged;
 
   const PassengerCounter({
@@ -10,10 +11,13 @@ class PassengerCounter extends StatelessWidget {
     required this.label,
     required this.count,
     required this.onChanged,
+    this.maxValue,
   });
 
   @override
   Widget build(BuildContext context) {
+    final bool canIncrement = maxValue == null || count < maxValue!;
+
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
@@ -27,7 +31,7 @@ class PassengerCounter extends StatelessWidget {
             Text(count.toString(), style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
             IconButton(
               icon: const Icon(Icons.add_circle_outline),
-              onPressed: () => onChanged(count + 1),
+              onPressed: canIncrement ? () => onChanged(count + 1) : null,
             ),
           ],
         ),

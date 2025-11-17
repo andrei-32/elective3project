@@ -152,4 +152,42 @@ class EmailService {
       };
     }
   }
+
+  static Future<Map<String, dynamic>> sendVerificationEmail(
+    String recipientEmail,
+    String recipientName,
+    String verificationCode,
+  ) async {
+    try {
+      final message = Message()
+        ..from = Address(_gmailAddress, 'FlyQuest Support')
+        ..recipients.add(recipientEmail)
+        ..subject = 'FlyQuest - Email Verification Code'
+        ..html = '''
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+            <h2 style="color: #2563eb;">Welcome to FlyQuest!</h2>
+            <p>Hi $recipientName,</p>
+            <p>To complete your registration, please use the following verification code:</p>
+            <div style="background-color: #f3f4f6; padding: 16px; text-align: center; margin: 20px 0;">
+              <strong style="font-size: 24px; color: #2563eb;">$verificationCode</strong>
+            </div>
+            <p>If you didn't request this, please ignore this email.</p>
+            <br>
+            <p>Best regards,<br>FlyQuest Team</p>
+          </div>
+        ''';
+
+      await send(message, _smtpServer);
+
+      return {
+        'success': true,
+        'message': 'Verification code sent to $recipientEmail',
+      };
+    } catch (e) {
+      return {
+        'success': false,
+        'error': 'Failed to send verification email: $e',
+      };
+    }
+  }
 }

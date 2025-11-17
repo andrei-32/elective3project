@@ -24,7 +24,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> with SingleTickerProv
   int _totalBookings = 0;
   int _totalUsers = 0;
 
-  // Data for Bookings Tab
+  // Data for Bookings & Users Tabs
   List<Booking> _bookings = [];
   List<User> _users = [];
   final List<String> _statuses = [
@@ -88,13 +88,12 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> with SingleTickerProv
   }
 
   Future<void> _deleteUser(int userId) async {
-    // Show a confirmation dialog before deleting
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
           title: const Text('Confirm Deletion'),
-          content: const Text('Are you sure you want to delete this user and all their associated bookings?'),
+          content: const Text('Are you sure you want to delete this user?'),
           actions: <Widget>[
             TextButton(
               onPressed: () => Navigator.of(context).pop(false),
@@ -111,8 +110,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> with SingleTickerProv
 
     if (confirmed == true) {
       await dbHelper.deleteUser(userId);
-      _loadUsers(); // Refresh the user list
-      _loadDashboardData(); // Also refresh dashboard stats
+      _loadAllData(); // Refresh all data
     }
   }
 
@@ -163,7 +161,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> with SingleTickerProv
           tabs: const [
             Tab(icon: Icon(Icons.dashboard), text: 'Dashboard'),
             Tab(icon: Icon(Icons.book_online), text: 'Bookings'),
-            Tab(icon: Icon(Icons.people), text: 'Users'), // New Users Tab
+            Tab(icon: Icon(Icons.people), text: 'Users'),
           ],
         ),
       ),
@@ -172,40 +170,24 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> with SingleTickerProv
         children: [
           _buildDashboardTab(),
           _buildBookingsTab(),
-          _buildUsersTab(), // New Users Tab View
+          _buildUsersTab(),
         ],
       ),
     );
   }
 
-  // --- Dashboard Tab UI ---
   Widget _buildDashboardTab() {
     return RefreshIndicator(
-      onRefresh: _loadDashboardData,
+      onRefresh: _loadAllData,
       child: GridView.count(
         padding: const EdgeInsets.all(16.0),
         crossAxisCount: 2,
         crossAxisSpacing: 16.0,
         mainAxisSpacing: 16.0,
         children: [
-          _buildStatCard(
-            'Total Revenue',
-            '₱${NumberFormat('#,##0.00').format(_totalRevenue)}',
-            Icons.attach_money,
-            Colors.green,
-          ),
-          _buildStatCard(
-            'Total Bookings',
-            _totalBookings.toString(),
-            Icons.flight_takeoff,
-            Colors.blue,
-          ),
-          _buildStatCard(
-            'Registered Users',
-            _totalUsers.toString(),
-            Icons.people,
-            Colors.orange,
-          ),
+          _buildStatCard('Total Revenue', '₱${NumberFormat('#,##0.00').format(_totalRevenue)}', Icons.attach_money, Colors.green),
+          _buildStatCard('Total Bookings', _totalBookings.toString(), Icons.flight_takeoff, Colors.blue),
+          _buildStatCard('Registered Users', _totalUsers.toString(), Icons.people, Colors.orange),
         ],
       ),
     );
@@ -219,7 +201,6 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> with SingleTickerProv
         padding: const EdgeInsets.all(16.0),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             Icon(icon, size: 40, color: color),
             const SizedBox(height: 12),
@@ -232,7 +213,6 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> with SingleTickerProv
     );
   }
 
-  // --- Bookings Tab UI ---
   Widget _buildBookingsTab() {
     return RefreshIndicator(
       onRefresh: _loadBookings,
@@ -245,38 +225,27 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> with SingleTickerProv
           final departureTime = DateTime.parse(departureDetails['startTime']);
 
           return Card(
-            elevation: 4.0,
+            elevation: 2.0,
             margin: const EdgeInsets.symmetric(vertical: 8.0),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.0)),
             child: Padding(
               padding: const EdgeInsets.all(16.0),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Booking Ref: ${booking.bookingReference}', style: const TextStyle(fontWeight: FontWeight.bold)),
+                  Text('Ref: ${booking.bookingReference}', style: const TextStyle(fontWeight: FontWeight.bold)),
                   const SizedBox(height: 8.0),
-                  Text('User ID: ${booking.userId}'),
                   Text('Passenger: ${booking.guestFirstName} ${booking.guestLastName}'),
                   Text('Route: ${booking.origin} to ${booking.destination}'),
                   Text('Departure: ${DateFormat.yMMMd().format(booking.departureDate)} at ${DateFormat.jm().format(departureTime)}'),
-                  const SizedBox(height: 8.0),
+                  const Divider(),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       const Text('Status:'),
                       DropdownButton<String>(
                         value: booking.status,
-                        items: _statuses.map((String status) {
-                          return DropdownMenuItem<String>(
-                            value: status,
-                            child: Text(status),
-                          );
-                        }).toList(),
-                        onChanged: (String? newStatus) {
-                          if (newStatus != null) {
-                            _updateStatus(booking, newStatus);
-                          }
-                        },
+                        items: _statuses.map((String status) => DropdownMenuItem<String>(value: status, child: Text(status))).toList(),
+                        onChanged: (newStatus) => _updateStatus(booking, newStatus!),
                       ),
                     ],
                   ),
@@ -289,7 +258,6 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> with SingleTickerProv
     );
   }
   
-  // --- Users Tab UI ---
   Widget _buildUsersTab() {
     return Scaffold(
       body: RefreshIndicator(
@@ -303,24 +271,27 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> with SingleTickerProv
               margin: const EdgeInsets.symmetric(vertical: 8.0),
               child: ListTile(
                 leading: CircleAvatar(child: Text(user.id.toString())),
-                title: Text(user.username, style: const TextStyle(fontWeight: FontWeight.bold)),
-                subtitle: Text(user.email),
+                title: Text('${user.firstName} ${user.lastName}', style: const TextStyle(fontWeight: FontWeight.bold)),
+                subtitle: Text('@${user.username} | ${user.email}'),
                 trailing: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     IconButton(
                       icon: const Icon(Icons.edit, color: Colors.blue),
-                      onPressed: () {
-                        Navigator.push(
+                      tooltip: 'Edit User',
+                      onPressed: () async {
+                        final result = await Navigator.push<bool>(
                           context,
                           MaterialPageRoute(
                             builder: (context) => EditProfileScreen(userId: user.id!),
                           ),
-                        ).then((_) => _loadUsers()); // Refresh list after edit
+                        );
+                        if (result == true) _loadAllData();
                       },
                     ),
                     IconButton(
                       icon: const Icon(Icons.delete, color: Colors.red),
+                      tooltip: 'Delete User',
                       onPressed: () => _deleteUser(user.id!),
                     ),
                   ],
@@ -332,18 +303,14 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> with SingleTickerProv
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () async {
-          // Navigate to the AddUserScreen and wait for a result.
           final result = await Navigator.push<bool>(
             context,
             MaterialPageRoute(builder: (context) => const AddUserScreen()),
           );
-          // If the result is true, it means a user was added, so refresh the list.
-          if (result == true) {
-            _loadUsers();
-            _loadDashboardData();
-          }
+          if (result == true) _loadAllData();
         },
         child: const Icon(Icons.add),
+        tooltip: 'Add User',
       ),
     );
   }

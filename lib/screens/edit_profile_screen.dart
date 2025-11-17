@@ -55,22 +55,29 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               const SizedBox(height: 24),
               _buildInfoTile(
                 context,
-                label: 'Name',
-                value: user.username, // Assuming username is the user's full name
-                onEdit: () => _showEditDialog('Name', 'username', user.username),
+                label: 'First Name',
+                value: user.firstName,
+                onEdit: () => _showEditDialog('First Name', 'firstName', user.firstName),
+              ),
+              _buildInfoTile(
+                context,
+                label: 'Last Name',
+                value: user.lastName,
+                onEdit: () => _showEditDialog('Last Name', 'lastName', user.lastName),
+              ),
+              _buildInfoTile(
+                context,
+                label: 'Username',
+                value: user.username,
+                isEditable: false,
               ),
               _buildInfoTile(
                 context,
                 label: 'Address',
-                value: user.address ?? 'Not set',
-                onEdit: () => _showEditDialog('Address', 'address', user.address ?? ''),
+                value: user.address,
+                onEdit: () => _showEditDialog('Address', 'address', user.address),
               ),
-              _buildInfoTile(
-                context,
-                label: 'Gender',
-                value: user.gender ?? 'Not set',
-                onEdit: () => _showEditDialog('Gender', 'gender', user.gender ?? ''),
-              ),
+              _buildGenderTile(context, user.gender),
               _buildBirthdayTile(context, user.birthday),
               _buildInfoTile(
                 context,
@@ -127,8 +134,19 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     );
   }
 
-  Widget _buildBirthdayTile(BuildContext context, DateTime? birthday) {
-    final value = birthday != null ? DateFormat.yMMMMd().format(birthday) : 'Not set';
+  Widget _buildGenderTile(BuildContext context, String currentGender) {
+    return ListTile(
+      title: const Text('Gender', style: TextStyle(fontWeight: FontWeight.bold)),
+      subtitle: Text(currentGender, style: Theme.of(context).textTheme.titleMedium),
+      trailing: IconButton(
+        icon: const Icon(Icons.edit, color: Colors.grey),
+        onPressed: () => _showGenderEditDialog(currentGender),
+      ),
+    );
+  }
+
+  Widget _buildBirthdayTile(BuildContext context, DateTime birthday) {
+    final value = DateFormat.yMMMMd().format(birthday);
     return ListTile(
       title: const Text('Birthday', style: TextStyle(fontWeight: FontWeight.bold)),
       subtitle: Text(value, style: Theme.of(context).textTheme.titleMedium),
@@ -137,7 +155,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         onPressed: () async {
           final newDate = await showDatePicker(
             context: context,
-            initialDate: birthday ?? DateTime.now(),
+            initialDate: birthday,
             firstDate: DateTime(1900),
             lastDate: DateTime.now(),
           );
@@ -177,6 +195,46 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                   await db.updateUserField(widget.userId, dbColumn, newValue);
                   Navigator.of(context).pop();
                   _refreshUser(); // Refresh the UI to show the new value
+                }
+              },
+              child: const Text('Save'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _showGenderEditDialog(String currentGender) {
+    String? selectedGender = currentGender;
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Select Gender'),
+          content: DropdownButton<String>(
+            value: selectedGender,
+            isExpanded: true,
+            items: ['Male', 'Female', 'Other'].map((gender) {
+              return DropdownMenuItem(value: gender, child: Text(gender));
+            }).toList(),
+            onChanged: (value) {
+              if (value != null) {
+                selectedGender = value;
+              }
+            },
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                if (selectedGender != null) {
+                  await db.updateUserField(widget.userId, 'gender', selectedGender!);
+                  Navigator.of(context).pop();
+                  _refreshUser();
                 }
               },
               child: const Text('Save'),
