@@ -10,7 +10,7 @@ class DatabaseHelper {
 
   static Database? _database;
   static const String _dbName = 'flight_booking.db';
-  static const int _dbVersion = 8;
+  static const int _dbVersion = 9; // Incremented version
 
   Future<Database> get database async {
     if (_database != null) return _database!;
@@ -62,7 +62,12 @@ class DatabaseHelper {
       await db.delete('bookings');
       await db.delete('users');
     }
-    if (oldVersion < 8) {
+    if (oldVersion < 9) {
+      // Add columns that were missing
+      await db.execute('ALTER TABLE bookings ADD COLUMN adults INTEGER NOT NULL DEFAULT 1');
+      await db.execute('ALTER TABLE bookings ADD COLUMN children INTEGER NOT NULL DEFAULT 0');
+      await db.execute('ALTER TABLE bookings ADD COLUMN infants INTEGER NOT NULL DEFAULT 0');
+      await db.execute('ALTER TABLE bookings ADD COLUMN flightClass TEXT NOT NULL DEFAULT \'Economy\'');
     }
   }
 
@@ -102,6 +107,10 @@ class DatabaseHelper {
         paymentMethod TEXT NOT NULL,
         status TEXT NOT NULL,
         cancellationReason TEXT, 
+        adults INTEGER NOT NULL DEFAULT 1,
+        children INTEGER NOT NULL DEFAULT 0,
+        infants INTEGER NOT NULL DEFAULT 0,
+        flightClass TEXT NOT NULL DEFAULT 'Economy',
         FOREIGN KEY (userId) REFERENCES users (id)
       )
     ''');

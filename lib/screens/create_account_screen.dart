@@ -1,62 +1,50 @@
-import 'package:elective3project/screens/admin_home_screen.dart';
-import 'package:elective3project/screens/create_account_screen.dart';
-import 'package:elective3project/screens/home_screen.dart';
-import 'package:flutter/material.dart';
 import 'package:elective3project/database/database_helper.dart';
+import 'package:elective3project/models/user.dart';
+import 'package:elective3project/screens/login_screen.dart';
+import 'package:flutter/material.dart';
 
-class LoginScreen extends StatefulWidget {
-  const LoginScreen({super.key});
+class CreateAccountScreen extends StatefulWidget {
+  const CreateAccountScreen({super.key});
 
   @override
-  State<LoginScreen> createState() => _LoginScreenState();
+  State<CreateAccountScreen> createState() => _CreateAccountScreenState();
 }
 
-class _LoginScreenState extends State<LoginScreen> {
+class _CreateAccountScreenState extends State<CreateAccountScreen> {
   final _formKey = GlobalKey<FormState>();
   final _usernameController = TextEditingController();
+  final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+  final _confirmPasswordController = TextEditingController();
   bool _isPasswordVisible = false;
-  String _errorMessage = '';
-
-  final String _adminUsername = 'admin';
-  final String _adminPassword = 'admin';
 
   @override
   void dispose() {
     _usernameController.dispose();
+    _emailController.dispose();
     _passwordController.dispose();
+    _confirmPasswordController.dispose();
     super.dispose();
   }
 
-  void _login() async {
+  void _createAccount() async {
     if (_formKey.currentState!.validate()) {
-      final username = _usernameController.text;
-      final password = _passwordController.text;
-
-      if (username == _adminUsername && password == _adminPassword) {
-        // Navigate to Admin Home Screen
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (context) => const AdminHomeScreen()),
-        );
-        return; // Exit after admin login
-      }
-
-      // Regular user login
       final db = DatabaseHelper();
-      final user = await db.getUser(username, password);
+      final newUser = User(
+        username: _usernameController.text,
+        email: _emailController.text,
+        password: _passwordController.text, // In a real app, hash this!
+      );
 
-      if (user != null) {
-        // Navigate to the regular home screen
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(
-            builder: (context) => const HomeScreen(),
-            settings: RouteSettings(arguments: user.id),
-          ),
+      await db.insertUser(newUser);
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Account created successfully! Please log in.')),
         );
-      } else {
-        setState(() {
-          _errorMessage = 'Invalid username or password.';
-        });
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (context) => const LoginScreen()),
+        );
       }
     }
   }
@@ -64,7 +52,7 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white, // Set a clean background
+      backgroundColor: Colors.white,
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
@@ -75,18 +63,10 @@ class _LoginScreenState extends State<LoginScreen> {
               children: [
                 _buildHeader(),
                 const SizedBox(height: 48.0),
-                _buildLoginForm(),
+                _buildCreateAccountForm(),
                 const SizedBox(height: 24.0),
-                _buildLoginButton(),
-                if (_errorMessage.isNotEmpty) ...[
-                  const SizedBox(height: 16.0),
-                  Text(
-                    _errorMessage,
-                    style: const TextStyle(color: Colors.red, fontSize: 14),
-                    textAlign: TextAlign.center,
-                  ),
-                ],
-                _buildCreateAccountLink(),
+                _buildCreateAccountButton(),
+                _buildLoginLink(),
               ],
             ),
           ),
@@ -95,7 +75,6 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
-  // Header widget with logo and app name
   Widget _buildHeader() {
     return Column(
       children: [
@@ -103,21 +82,21 @@ class _LoginScreenState extends State<LoginScreen> {
           'assets/images/logo.png', 
           height: 100,
           errorBuilder: (context, error, stackTrace) {
-            return const Icon(Icons.flight_takeoff, size: 100, color: Colors.blue); // Fallback icon
+            return const Icon(Icons.flight_takeoff, size: 100, color: Colors.blue);
           },
         ),
         const SizedBox(height: 16),
         const Text(
-          'FLYQUEST',
+          'Join FLYQUEST',
           style: TextStyle(
             fontSize: 28,
             fontWeight: FontWeight.bold,
-            color: Color(0xFF000080), // A darker blue for the text
+            color: Color(0xFF000080),
           ),
         ),
         const SizedBox(height: 8),
         Text(
-          'Sign in to continue',
+          'Create an account to get started',
           style: TextStyle(
             fontSize: 16,
             color: Colors.grey[600],
@@ -127,8 +106,7 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
-  // Login form widget
-  Widget _buildLoginForm() {
+  Widget _buildCreateAccountForm() {
     return Form(
       key: _formKey,
       child: Column(
@@ -144,7 +122,25 @@ class _LoginScreenState extends State<LoginScreen> {
             ),
             validator: (value) {
               if (value == null || value.isEmpty) {
-                return 'Please enter your username';
+                return 'Please enter a username';
+              }
+              return null;
+            },
+          ),
+          const SizedBox(height: 16.0),
+          TextFormField(
+            controller: _emailController,
+            decoration: InputDecoration(
+              labelText: 'Email',
+              prefixIcon: const Icon(Icons.email_outlined),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12.0),
+              ),
+            ),
+            keyboardType: TextInputType.emailAddress,
+            validator: (value) {
+              if (value == null || value.isEmpty || !value.contains('@')) {
+                return 'Please enter a valid email';
               }
               return null;
             },
@@ -171,8 +167,26 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
             ),
             validator: (value) {
-              if (value == null || value.isEmpty) {
-                return 'Please enter your password';
+              if (value == null || value.isEmpty || value.length < 6) {
+                return 'Password must be at least 6 characters';
+              }
+              return null;
+            },
+          ),
+          const SizedBox(height: 16.0),
+          TextFormField(
+            controller: _confirmPasswordController,
+            obscureText: !_isPasswordVisible,
+            decoration: InputDecoration(
+              labelText: 'Confirm Password',
+              prefixIcon: const Icon(Icons.lock_outline),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12.0),
+              ),
+            ),
+            validator: (value) {
+              if (value != _passwordController.text) {
+                return 'Passwords do not match';
               }
               return null;
             },
@@ -182,41 +196,36 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
-  // Login button widget
-  Widget _buildLoginButton() {
+  Widget _buildCreateAccountButton() {
     return ElevatedButton(
-      onPressed: _login,
+      onPressed: _createAccount,
       style: ElevatedButton.styleFrom(
         padding: const EdgeInsets.symmetric(vertical: 16.0),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(12.0),
         ),
-        backgroundColor: const Color(0xFF000080), // Match header color
+        backgroundColor: const Color(0xFF000080),
       ),
       child: const Text(
-        'LOGIN',
+        'CREATE ACCOUNT',
         style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
       ),
     );
   }
 
-  // Link to create account screen
-  Widget _buildCreateAccountLink() {
+  Widget _buildLoginLink() {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 16.0),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Text("Don't have an account?"),
+          const Text("Already have an account?"),
           TextButton(
             onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const CreateAccountScreen()),
-              );
+              Navigator.pop(context);
             },
             child: const Text(
-              'Create Account',
+              'Log In',
               style: TextStyle(
                 fontWeight: FontWeight.bold,
                 color: Color(0xFF000080),

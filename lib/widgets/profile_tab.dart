@@ -35,9 +35,6 @@ class _ProfileTabState extends State<ProfileTab> {
 
   @override
   Widget build(BuildContext context) {
-    // Define colors from your theme to ensure consistency
-    final Color primaryColor = Theme.of(context).primaryColor;
-
     // This function handles the navigation to the edit profile screen.
     void navigateToEditProfile() {
       if (widget.userId != null) {
