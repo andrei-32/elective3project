@@ -195,7 +195,7 @@ class _HomeScreenState extends State<HomeScreen> {
       BookingTab(initialDestination: _initialDestination, userId: _userId),
       const AvailableFlightsTab(),
       BookedFlightsTab(bookedFlights: _bookedFlights, onRefresh: _loadBookings),
-      ProfileTab(userId: _userId),
+      ProfileTab(userId: _userId, onMyBookingsTapped: () => _onItemTapped(3)),
     ];
 
     return Scaffold(

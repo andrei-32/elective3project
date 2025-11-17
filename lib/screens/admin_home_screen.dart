@@ -1,8 +1,12 @@
 import 'dart:convert';
-
 import 'package:elective3project/database/database_helper.dart';
 import 'package:elective3project/models/booking.dart';
+import 'package:elective3project/models/user.dart';
+import 'package:elective3project/screens/add_user_screen.dart';
+import 'package:elective3project/screens/edit_profile_screen.dart';
+import 'package:elective3project/screens/login_screen.dart';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 
 class AdminHomeScreen extends StatefulWidget {
   const AdminHomeScreen({super.key});
@@ -11,8 +15,18 @@ class AdminHomeScreen extends StatefulWidget {
   State<AdminHomeScreen> createState() => _AdminHomeScreenState();
 }
 
-class _AdminHomeScreenState extends State<AdminHomeScreen> {
+class _AdminHomeScreenState extends State<AdminHomeScreen> with SingleTickerProviderStateMixin {
+  late TabController _tabController;
+  final dbHelper = DatabaseHelper();
+
+  // Data for Dashboard
+  double _totalRevenue = 0;
+  int _totalBookings = 0;
+  int _totalUsers = 0;
+
+  // Data for Bookings Tab
   List<Booking> _bookings = [];
+  List<User> _users = [];
   final List<String> _statuses = [
     'Scheduled', 'Confirmed', 'On Time', 'Delayed', 'Cancelled', 'Rescheduled',
     'Check-in Open', 'Check-in Closed', 'Boarding Soon', 'Boarding', 'Gate Closed'
@@ -21,12 +35,46 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
   @override
   void initState() {
     super.initState();
-    _loadBookings();
+    _tabController = TabController(length: 3, vsync: this);
+    _loadAllData();
+  }
+
+  Future<void> _loadAllData() async {
+    await _loadDashboardData();
+    await _loadBookings();
+    await _loadUsers();
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _loadDashboardData() async {
+    final revenue = await dbHelper.getTotalRevenue();
+    final bookings = await dbHelper.getTotalBookings();
+    final users = await dbHelper.getTotalUsers();
+    if (mounted) {
+      setState(() {
+        _totalRevenue = revenue;
+        _totalBookings = bookings;
+        _totalUsers = users;
+      });
+    }
+  }
+
+  Future<void> _loadUsers() async {
+    final users = await dbHelper.getAllUsers();
+    if (mounted) {
+      setState(() {
+        _users = users;
+      });
+    }
   }
 
   Future<void> _loadBookings() async {
-    final db = DatabaseHelper();
-    final bookings = await db.getAllBookings();
+    final bookings = await dbHelper.getAllBookings();
     if (mounted) {
       setState(() {
         _bookings = bookings;
@@ -35,68 +83,245 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
   }
 
   Future<void> _updateStatus(Booking booking, String newStatus) async {
-    final db = DatabaseHelper();
-    await db.updateBookingStatus(booking.id!, newStatus);
+    await dbHelper.updateBookingStatus(booking.id!, newStatus);
     _loadBookings();
+  }
+
+  Future<void> _deleteUser(int userId) async {
+    // Show a confirmation dialog before deleting
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Confirm Deletion'),
+          content: const Text('Are you sure you want to delete this user and all their associated bookings?'),
+          actions: <Widget>[
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              child: const Text('Delete', style: TextStyle(color: Colors.red)),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (confirmed == true) {
+      await dbHelper.deleteUser(userId);
+      _loadUsers(); // Refresh the user list
+      _loadDashboardData(); // Also refresh dashboard stats
+    }
+  }
+
+  void _logout() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Confirm Logout'),
+          content: const Text('Are you sure you want to log out from the admin panel?'),
+          actions: <Widget>[
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pushAndRemoveUntil(
+                  MaterialPageRoute(builder: (context) => const LoginScreen()),
+                  (Route<dynamic> route) => false,
+                );
+              },
+              child: const Text('Logout', style: TextStyle(color: Colors.red)),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Row(
-          children: const [
-            Icon(Icons.flight_takeoff),
-            SizedBox(width: 8),
-            Text('FlyQuest Admin', style: TextStyle(fontWeight: FontWeight.bold)),
+        title: const Text('FlyQuest Admin'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.logout),
+            tooltip: 'Logout',
+            onPressed: _logout, 
+          ),
+        ],
+        bottom: TabBar(
+          controller: _tabController,
+          indicatorColor: Colors.white,
+          labelColor: Colors.white,
+          unselectedLabelColor: Colors.white70,
+          tabs: const [
+            Tab(icon: Icon(Icons.dashboard), text: 'Dashboard'),
+            Tab(icon: Icon(Icons.book_online), text: 'Bookings'),
+            Tab(icon: Icon(Icons.people), text: 'Users'), // New Users Tab
           ],
         ),
       ),
+      body: TabBarView(
+        controller: _tabController,
+        children: [
+          _buildDashboardTab(),
+          _buildBookingsTab(),
+          _buildUsersTab(), // New Users Tab View
+        ],
+      ),
+    );
+  }
+
+  // --- Dashboard Tab UI ---
+  Widget _buildDashboardTab() {
+    return RefreshIndicator(
+      onRefresh: _loadDashboardData,
+      child: GridView.count(
+        padding: const EdgeInsets.all(16.0),
+        crossAxisCount: 2,
+        crossAxisSpacing: 16.0,
+        mainAxisSpacing: 16.0,
+        children: [
+          _buildStatCard(
+            'Total Revenue',
+            '₱${NumberFormat('#,##0.00').format(_totalRevenue)}',
+            Icons.attach_money,
+            Colors.green,
+          ),
+          _buildStatCard(
+            'Total Bookings',
+            _totalBookings.toString(),
+            Icons.flight_takeoff,
+            Colors.blue,
+          ),
+          _buildStatCard(
+            'Registered Users',
+            _totalUsers.toString(),
+            Icons.people,
+            Colors.orange,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStatCard(String title, String value, IconData icon, Color color) {
+    return Card(
+      elevation: 4.0,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.0)),
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Icon(icon, size: 40, color: color),
+            const SizedBox(height: 12),
+            Text(title, style: const TextStyle(color: Colors.grey)),
+            const SizedBox(height: 4),
+            Text(value, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // --- Bookings Tab UI ---
+  Widget _buildBookingsTab() {
+    return RefreshIndicator(
+      onRefresh: _loadBookings,
+      child: ListView.builder(
+        padding: const EdgeInsets.all(8.0),
+        itemCount: _bookings.length,
+        itemBuilder: (context, index) {
+          final booking = _bookings[index];
+          final departureDetails = json.decode(booking.departureFlightDetails);
+          final departureTime = DateTime.parse(departureDetails['startTime']);
+
+          return Card(
+            elevation: 4.0,
+            margin: const EdgeInsets.symmetric(vertical: 8.0),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.0)),
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Booking Ref: ${booking.bookingReference}', style: const TextStyle(fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 8.0),
+                  Text('User ID: ${booking.userId}'),
+                  Text('Passenger: ${booking.guestFirstName} ${booking.guestLastName}'),
+                  Text('Route: ${booking.origin} to ${booking.destination}'),
+                  Text('Departure: ${DateFormat.yMMMd().format(booking.departureDate)} at ${DateFormat.jm().format(departureTime)}'),
+                  const SizedBox(height: 8.0),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text('Status:'),
+                      DropdownButton<String>(
+                        value: booking.status,
+                        items: _statuses.map((String status) {
+                          return DropdownMenuItem<String>(
+                            value: status,
+                            child: Text(status),
+                          );
+                        }).toList(),
+                        onChanged: (String? newStatus) {
+                          if (newStatus != null) {
+                            _updateStatus(booking, newStatus);
+                          }
+                        },
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+  
+  // --- Users Tab UI ---
+  Widget _buildUsersTab() {
+    return Scaffold(
       body: RefreshIndicator(
-        onRefresh: _loadBookings,
+        onRefresh: _loadUsers,
         child: ListView.builder(
           padding: const EdgeInsets.all(8.0),
-          itemCount: _bookings.length,
+          itemCount: _users.length,
           itemBuilder: (context, index) {
-            final booking = _bookings[index];
-            // Decode the JSON string to get flight details
-            final departureDetails = json.decode(booking.departureFlightDetails);
-
+            final user = _users[index];
             return Card(
-              elevation: 4.0,
               margin: const EdgeInsets.symmetric(vertical: 8.0),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.0)),
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+              child: ListTile(
+                leading: CircleAvatar(child: Text(user.id.toString())),
+                title: Text(user.username, style: const TextStyle(fontWeight: FontWeight.bold)),
+                subtitle: Text(user.email),
+                trailing: Row(
+                  mainAxisSize: MainAxisSize.min,
                   children: [
-                    Text('Booking Ref: ${booking.bookingReference}', style: const TextStyle(fontWeight: FontWeight.bold)),
-                    const SizedBox(height: 8.0),
-                    Text('User ID: ${booking.userId}'),
-                    Text('Passenger: ${booking.guestFirstName} ${booking.guestLastName}'),
-                    Text('Route: ${booking.origin} to ${booking.destination}'),
-                    Text('Departure: ${booking.departureDate.toLocal().toString().split(' ')[0]} at ${departureDetails['departureTime']}'),
-                    const SizedBox(height: 8.0),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        const Text('Status:'),
-                        DropdownButton<String>(
-                          value: booking.status,
-                          items: _statuses.map((String status) {
-                            return DropdownMenuItem<String>(
-                              value: status,
-                              child: Text(status),
-                            );
-                          }).toList(),
-                          onChanged: (String? newStatus) {
-                            if (newStatus != null) {
-                              _updateStatus(booking, newStatus);
-                            }
-                          },
-                        ),
-                      ],
+                    IconButton(
+                      icon: const Icon(Icons.edit, color: Colors.blue),
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => EditProfileScreen(userId: user.id!),
+                          ),
+                        ).then((_) => _loadUsers()); // Refresh list after edit
+                      },
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.delete, color: Colors.red),
+                      onPressed: () => _deleteUser(user.id!),
                     ),
                   ],
                 ),
@@ -104,6 +329,21 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
             );
           },
         ),
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () async {
+          // Navigate to the AddUserScreen and wait for a result.
+          final result = await Navigator.push<bool>(
+            context,
+            MaterialPageRoute(builder: (context) => const AddUserScreen()),
+          );
+          // If the result is true, it means a user was added, so refresh the list.
+          if (result == true) {
+            _loadUsers();
+            _loadDashboardData();
+          }
+        },
+        child: const Icon(Icons.add),
       ),
     );
   }

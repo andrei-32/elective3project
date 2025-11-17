@@ -6,7 +6,13 @@ import 'package:flutter/material.dart';
 
 class ProfileTab extends StatefulWidget {
   final int? userId;
-  const ProfileTab({super.key, required this.userId});
+  final VoidCallback onMyBookingsTapped;
+
+  const ProfileTab({
+    super.key, 
+    required this.userId,
+    required this.onMyBookingsTapped
+  });
 
   @override
   State<ProfileTab> createState() => _ProfileTabState();
@@ -69,11 +75,7 @@ class _ProfileTabState extends State<ProfileTab> {
           icon: Icons.flight_takeoff,
           title: 'My Bookings',
           subtitle: 'View flight status and history',
-          onTap: () {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Functionality to switch tabs is coming soon!')),
-            );
-          },
+          onTap: widget.onMyBookingsTapped, // Use the callback
         ),
         const Divider(height: 32.0),
 

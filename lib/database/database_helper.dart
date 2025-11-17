@@ -10,7 +10,7 @@ class DatabaseHelper {
 
   static Database? _database;
   static const String _dbName = 'flight_booking.db';
-  static const int _dbVersion = 9; // Incremented version
+  static const int _dbVersion = 9;
 
   Future<Database> get database async {
     if (_database != null) return _database!;
@@ -63,7 +63,6 @@ class DatabaseHelper {
       await db.delete('users');
     }
     if (oldVersion < 9) {
-      // Add columns that were missing
       await db.execute('ALTER TABLE bookings ADD COLUMN adults INTEGER NOT NULL DEFAULT 1');
       await db.execute('ALTER TABLE bookings ADD COLUMN children INTEGER NOT NULL DEFAULT 0');
       await db.execute('ALTER TABLE bookings ADD COLUMN infants INTEGER NOT NULL DEFAULT 0');
@@ -229,6 +228,15 @@ class DatabaseHelper {
     );
   }
 
+  Future<void> deleteUser(int id) async {
+    final db = await database;
+    await db.delete(
+      'users',
+      where: 'id = ?',
+      whereArgs: [id],
+    );
+  }
+
   Future<int> insertBooking(Booking booking) async {
     final db = await database;
     return await db.insert('bookings', booking.toMap(booking.userId));
@@ -362,5 +370,23 @@ class DatabaseHelper {
     final db = await database;
     await db.delete('bookings');
     await db.delete('users');
+  }
+
+  Future<double> getTotalRevenue() async {
+    final db = await database;
+    final result = await db.rawQuery('SELECT SUM(totalPrice) FROM bookings');
+    return (result.first.values.first as num?)?.toDouble() ?? 0.0;
+  }
+
+  Future<int> getTotalBookings() async {
+    final db = await database;
+    final result = await db.rawQuery('SELECT COUNT(*) FROM bookings');
+    return (result.first.values.first as num?)?.toInt() ?? 0;
+  }
+
+  Future<int> getTotalUsers() async {
+    final db = await database;
+    final result = await db.rawQuery('SELECT COUNT(*) FROM users');
+    return (result.first.values.first as num?)?.toInt() ?? 0;
   }
 }
