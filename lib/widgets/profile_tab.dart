@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:elective3project/database/database_helper.dart';
 import 'package:elective3project/models/user.dart';
 import 'package:elective3project/screens/contact_us_screen.dart';
@@ -44,15 +45,19 @@ class _ProfileTabState extends State<ProfileTab> {
 
   @override
   Widget build(BuildContext context) {
-    // This function handles the navigation to the edit profile screen.
-    void navigateToEditProfile() {
+    void navigateToEditProfile() async {
       if (widget.userId != null) {
-        Navigator.push(
+        final result = await Navigator.push<bool>(
           context,
           MaterialPageRoute(
             builder: (context) => EditProfileScreen(userId: widget.userId!),
           ),
         );
+
+        // If the result is true, it means changes were made, so refresh the user data.
+        if (result == true) {
+          _loadUserData();
+        }
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Error: User not logged in properly.')),
@@ -63,89 +68,23 @@ class _ProfileTabState extends State<ProfileTab> {
     return ListView(
       padding: const EdgeInsets.all(16.0),
       children: [
-        // Section: ACCOUNT
         _buildSectionHeader(context, 'ACCOUNT'),
         _buildProfileCard(context, onTap: navigateToEditProfile),
-        _buildListTile(
-          context,
-          icon: Icons.person_outline,
-          title: 'Basic Information',
-          subtitle: 'Manage your account details',
-          onTap: navigateToEditProfile,
-        ),
-        _buildListTile(
-          context,
-          icon: Icons.flight_takeoff,
-          title: 'My Bookings',
-          subtitle: 'View flight status and history',
-          onTap: widget.onMyBookingsTapped, // Use the callback
-        ),
+        _buildListTile(context, icon: Icons.person_outline, title: 'Basic Information', subtitle: 'Manage your account details', onTap: navigateToEditProfile),
+        _buildListTile(context, icon: Icons.flight_takeoff, title: 'My Bookings', subtitle: 'View flight status and history', onTap: widget.onMyBookingsTapped),
         const Divider(height: 32.0),
-
-        // Section: INFORMATION
         _buildSectionHeader(context, 'INFORMATION'),
-        _buildListTile(
-          context,
-          icon: Icons.calendar_today,
-          title: 'Philippine Holidays',
-          onTap: () {
-            Navigator.pushNamed(context, '/holidays', arguments: widget.userId);
-          },
-        ),
-        _buildListTile(
-          context,
-          icon: Icons.headset_mic_outlined,
-          title: 'Contact Us',
-          onTap: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => const ContactUsScreen()),
-            );
-          },
-        ),
+        _buildListTile(context, icon: Icons.calendar_today, title: 'Philippine Holidays', onTap: () => Navigator.pushNamed(context, '/holidays', arguments: widget.userId)),
+        _buildListTile(context, icon: Icons.headset_mic_outlined, title: 'Contact Us', onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const ContactUsScreen()))),
         const Divider(height: 32.0),
-
-        // Section: FAQ & RESOURCES
         _buildSectionHeader(context, 'FAQ & RESOURCES'),
-        _buildListTile(
-          context,
-          icon: Icons.description_outlined,
-          title: 'Terms and Conditions',
-          onTap: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => const TermsAndConditionsScreen()),
-            );
-          },
-        ),
-        _buildListTile(
-          context,
-          icon: Icons.quiz_outlined,
-          title: 'FAQs',
-          onTap: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => const FaqScreen()),
-            );
-          },
-        ),
-        _buildListTile(
-          context,
-          icon: Icons.settings_outlined,
-          title: 'Settings',
-          onTap: () {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Navigate to Settings')),
-            );
-          },
-        ),
+        _buildListTile(context, icon: Icons.description_outlined, title: 'Terms and Conditions', onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const TermsAndConditionsScreen()))),
+        _buildListTile(context, icon: Icons.quiz_outlined, title: 'FAQs', onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const FaqScreen()))),
+        _buildListTile(context, icon: Icons.settings_outlined, title: 'Settings', onTap: () => ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Navigate to Settings')))),
         const Divider(height: 32.0),
         ListTile(
           leading: const Icon(Icons.logout, color: Colors.red),
-          title: const Text(
-            'Logout',
-            style: TextStyle(color: Colors.red),
-          ),
+          title: const Text('Logout', style: TextStyle(color: Colors.red)),
           onTap: () {
             showDialog(
               context: context,
@@ -154,12 +93,7 @@ class _ProfileTabState extends State<ProfileTab> {
                   title: const Text('Confirm Logout'),
                   content: const Text('Are you sure you want to log out?'),
                   actions: <Widget>[
-                    TextButton(
-                      onPressed: () {
-                        Navigator.of(context).pop(); // Close the dialog
-                      },
-                      child: const Text('Cancel'),
-                    ),
+                    TextButton(onPressed: () => Navigator.of(context).pop(), child: const Text('Cancel')),
                     TextButton(
                       onPressed: () {
                         Navigator.of(context).pushAndRemoveUntil(
@@ -179,22 +113,13 @@ class _ProfileTabState extends State<ProfileTab> {
     );
   }
 
-  // Helper widget to build section headers
   Widget _buildSectionHeader(BuildContext context, String title) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 8.0, top: 16.0),
-      child: Text(
-        title,
-        style: TextStyle(
-          fontSize: 16,
-          fontWeight: FontWeight.bold,
-          color: Theme.of(context).primaryColor,
-        ),
-      ),
+      child: Text(title, style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Theme.of(context).primaryColor)),
     );
   }
 
-  // Helper widget for the main profile card
   Widget _buildProfileCard(BuildContext context, {required VoidCallback onTap}) {
     return Card(
       elevation: 2.0,
@@ -202,36 +127,23 @@ class _ProfileTabState extends State<ProfileTab> {
       child: ListTile(
         leading: CircleAvatar(
           radius: 28,
-          backgroundColor: Theme.of(context).colorScheme.secondary,
-          child: Icon(
-            Icons.person,
-            size: 32,
-            color: Theme.of(context).primaryColor,
-          ),
+          backgroundColor: Colors.grey.shade300,
+          backgroundImage: _user?.profileImagePath != null && File(_user!.profileImagePath!).existsSync()
+              ? FileImage(File(_user!.profileImagePath!))
+              : null,
+          child: _user?.profileImagePath == null || !File(_user!.profileImagePath!).existsSync()
+              ? Icon(Icons.person, size: 32, color: Colors.grey.shade600)
+              : null,
         ),
-        title: Text(
-          _user != null ? '${_user!.firstName} ${_user!.lastName}' : 'Loading...',
-          style: const TextStyle(fontWeight: FontWeight.bold),
-        ),
+        title: Text(_user != null ? '${_user!.firstName} ${_user!.lastName}' : 'Loading...', style: const TextStyle(fontWeight: FontWeight.bold)),
         subtitle: Text(_user != null ? _user!.email : '...'),
-        trailing: Icon(
-          Icons.arrow_forward_ios,
-          size: 16,
-          color: Colors.grey[600],
-        ),
+        trailing: Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey[600]),
         onTap: onTap,
       ),
     );
   }
 
-  // Helper widget to build reusable list tiles for menu items
-  Widget _buildListTile(
-      BuildContext context, {
-        required IconData icon,
-        required String title,
-        String? subtitle,
-        required VoidCallback onTap,
-      }) {
+  Widget _buildListTile(BuildContext context, {required IconData icon, required String title, String? subtitle, required VoidCallback onTap}) {
     return ListTile(
       leading: Icon(icon, color: Theme.of(context).primaryColor),
       title: Text(title),

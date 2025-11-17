@@ -10,7 +10,7 @@ class DatabaseHelper {
 
   static Database? _database;
   static const String _dbName = 'flight_booking.db';
-  static const int _dbVersion = 10; // Incremented version
+  static const int _dbVersion = 11; // Incremented version
 
   Future<Database> get database async {
     if (_database != null) return _database!;
@@ -37,22 +37,15 @@ class DatabaseHelper {
   }
 
   Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
-    if (oldVersion < 9) {
-       await db.execute('ALTER TABLE bookings ADD COLUMN adults INTEGER NOT NULL DEFAULT 1');
-      await db.execute('ALTER TABLE bookings ADD COLUMN children INTEGER NOT NULL DEFAULT 0');
-      await db.execute('ALTER TABLE bookings ADD COLUMN infants INTEGER NOT NULL DEFAULT 0');
-      await db.execute('ALTER TABLE bookings ADD COLUMN flightClass TEXT NOT NULL DEFAULT \'Economy\'');
-    }
     if (oldVersion < 10) {
-      // Add new columns for user details
-      await db.execute('ALTER TABLE users ADD COLUMN firstName TEXT NOT NULL DEFAULT \'\'');
-      await db.execute('ALTER TABLE users ADD COLUMN lastName TEXT NOT NULL DEFAULT \'\'');
-      
-      // For existing columns, we handle nulls carefully.
-      // These will be enforced at the app level for new users.
-      await db.execute('ALTER TABLE users ADD COLUMN address TEXT');
-      await db.execute('ALTER TABLE users ADD COLUMN gender TEXT');
-      await db.execute('ALTER TABLE users ADD COLUMN birthday TEXT');
+        await db.execute('ALTER TABLE users ADD COLUMN firstName TEXT NOT NULL DEFAULT \'\'');
+        await db.execute('ALTER TABLE users ADD COLUMN lastName TEXT NOT NULL DEFAULT \'\'');
+        await db.execute('ALTER TABLE users ADD COLUMN address TEXT');
+        await db.execute('ALTER TABLE users ADD COLUMN gender TEXT');
+        await db.execute('ALTER TABLE users ADD COLUMN birthday TEXT');
+    }
+    if (oldVersion < 11) {
+      await db.execute('ALTER TABLE users ADD COLUMN profileImagePath TEXT');
     }
   }
 
@@ -67,7 +60,8 @@ class DatabaseHelper {
         password TEXT NOT NULL,
         address TEXT NOT NULL,
         gender TEXT NOT NULL,
-        birthday TEXT NOT NULL
+        birthday TEXT NOT NULL,
+        profileImagePath TEXT
       )
     ''');
   }

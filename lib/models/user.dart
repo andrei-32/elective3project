@@ -8,6 +8,7 @@ class User {
   final String address;
   final String gender;
   final DateTime birthday;
+  final String? profileImagePath;
 
   User({
     this.id,
@@ -19,6 +20,7 @@ class User {
     required this.address,
     required this.gender,
     required this.birthday,
+    this.profileImagePath,
   });
 
   Map<String, dynamic> toMap() {
@@ -32,6 +34,7 @@ class User {
       'address': address,
       'gender': gender,
       'birthday': birthday.toIso8601String(),
+      'profileImagePath': profileImagePath,
     };
   }
 
@@ -46,6 +49,7 @@ class User {
       address: map['address'] ?? '',
       gender: map['gender'] ?? '',
       birthday: map['birthday'] != null ? DateTime.parse(map['birthday']) : DateTime.now(),
+      profileImagePath: map['profileImagePath'],
     );
   }
 }
